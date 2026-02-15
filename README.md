@@ -33,7 +33,9 @@ Think of it as an open-source alternative to commercial broadcast graphics syste
 >
 > Contributions, bug reports, and feedback are very welcome — this is exactly why we're open-sourcing it.
 
-<!-- screenshots here -->
+### Demo Video
+
+[![DaroEngine2 Demo](https://img.youtube.com/vi/EpMRnYv-PZM/maxresdefault.jpg)](https://youtu.be/EpMRnYv-PZM)
 
 ---
 
