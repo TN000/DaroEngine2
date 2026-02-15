@@ -27,6 +27,7 @@ Think of it as an open-source alternative to commercial broadcast graphics syste
 - **Template System** — Create reusable templates with fill forms and named property bindings (transfunctioners)
 - **Playout Engine** — Playlist management with cue/take/clear workflow, auto-advance, and looping
 - **Spout Output** — Send rendered frames to OBS, vMix, CasparCG, or any Spout receiver
+- **Spout Input** — Receive live video streams from other Spout senders and use them as layer textures (e.g., live camera feeds, other applications)
 - **Video Support** — MP4, MOV, ProRes 4444, Apple Animation with alpha channel support
 - **Mosart Automation** — TCP command interface for newsroom automation integration
 - **REST API Middleware** — ASP.NET Core service for external system integration (Octopus NRCS, etc.)
