@@ -11,8 +11,7 @@
 
 | | File | Description |
 |---|------|-------------|
-| **Installer** | [DaroEngine2-v0.1.0-Setup.exe](https://github.com/TN000/DaroEngine2/releases/download/v0.1.0/DaroEngine2-v0.1.0-Setup.exe) | Windows installer — installs to Program Files, creates Start Menu shortcut, includes uninstaller. Recommended for most users. |
-| **Portable** | [DaroEngine2-v0.1.0-win-x64.zip](https://github.com/TN000/DaroEngine2/releases/download/v0.1.0/DaroEngine2-v0.1.0-win-x64.zip) | Extract anywhere and run. No installation needed. |
+| **Installer** | [DaroEngine2-v0.1.1-Setup.exe](https://github.com/TN000/DaroEngine2/releases/download/v0.1.1/DaroEngine2-v0.1.1-Setup.exe) | Windows installer — installs to Program Files, creates Start Menu shortcut, includes uninstaller. Recommended for most users. |
 
 **Requires:** Windows 10/11 (x64), [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0), DirectX 11 GPU
 
