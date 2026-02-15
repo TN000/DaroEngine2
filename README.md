@@ -109,7 +109,8 @@ DaroEngine2 separates **design** from **playout** — a designer creates animate
 
 Once your templates are ready, going live is simple — the operator just works with a playlist:
 
-1. **Browse Templates** — In the PLAYOUT tab, pick a template from the library
+1. **Start the Engine** — Click the **Run Daro Engine** button to initialize the rendering engine. This must be done before any graphics can be played out
+2. **Browse Templates** — In the PLAYOUT tab, pick a template from the library
 2. **Fill In** — Type the text (headline, name, score...) into the form fields
 3. **Add to Playlist** — Click **+ Add to Playlist**. Repeat for all graphics you'll need during the show
 4. **Cue Next** — Double-click an item to load it into the engine, ready to go
