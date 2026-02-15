@@ -14,6 +14,8 @@ DaroEngine2 is an open-source real-time graphics engine built for broadcast and 
 
 Think of it as an open-source alternative to commercial broadcast graphics systems — design your lower thirds, titles, and overlays in the visual editor, then play them out live.
 
+> **Built in 7 days** using vibecoding with [Claude Code](https://claude.ai/code) — from zero to a working broadcast graphics engine.
+
 <!-- screenshots here -->
 
 ---
@@ -134,6 +136,57 @@ The engine exports a C API with `Daro_*` prefix and `__stdcall` calling conventi
 - **Frame Buffer:** `Daro_LockFrameBuffer()`, `Daro_UnlockFrameBuffer()`
 
 See `Engine/DaroEngine.h` for the full API reference.
+
+---
+
+## Graphics Middleware
+
+The GraphicsMiddleware is an ASP.NET Core service that acts as a bridge between external systems (newsroom, automation) and DaroDesigner. It provides a REST API and stores playlist items in a SQLite database.
+
+### Running the Middleware
+
+```bash
+cd GraphicsMiddleware
+dotnet run
+```
+
+This starts the service on `http://localhost:5000` with:
+- **REST API** for creating and managing playlist items (`/api/items`)
+- **Control endpoints** for remote playout commands (`/api/control/cue`, `/play`, `/stop`, etc.)
+- **Spout control** for enabling/disabling output remotely
+- **Web dashboard** at `http://localhost:5000` for quick testing
+
+### REST API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/items` | Create a playlist item (template path, scene path, filled data) |
+| GET | `/api/items/{id}` | Get item by ID |
+| GET | `/api/items` | List all items |
+| DELETE | `/api/items/{id}` | Delete item |
+| POST | `/api/control/cue` | CUE — load item into playout |
+| POST | `/api/control/play` | PLAY — take on air |
+| POST | `/api/control/stop` | STOP — clear output |
+
+### Example: Create and Play a Graphic
+
+```bash
+# 1. Create a playlist item
+curl -X POST http://localhost:5000/api/items \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Breaking News",
+    "templateFilePath": "path/to/template.dtemplate",
+    "linkedScenePath": "path/to/scene.daro",
+    "filledData": { "title-tf": "Breaking News", "subtitle-tf": "Live report" }
+  }'
+
+# 2. CUE the item (returns item ID from step 1)
+curl -X POST http://localhost:5000/api/control/cue -d '"ITEM-GUID"'
+
+# 3. PLAY — take on air
+curl -X POST http://localhost:5000/api/control/play
+```
 
 ---
 
