@@ -1,8 +1,10 @@
 // Designer/PlayoutWindow.xaml.cs
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,6 +37,14 @@ namespace DaroDesigner
         private PlaylistDatabase _playlistDatabase;
         private volatile string _lastMosartItemId; // Track last CUE'd item for PLAY/STOP (volatile for thread safety)
         private readonly SemaphoreSlim _mosartCommandLock = new SemaphoreSlim(1, 1); // Serialize Mosart command handling
+
+        // Middleware process management
+        private Process _middlewareProcess;
+        private CancellationTokenSource _middlewareHealthCts;
+        private MiddlewareState _middlewareState = MiddlewareState.Stopped;
+        private static readonly HttpClient _healthClient = new() { Timeout = TimeSpan.FromSeconds(3) };
+
+        private enum MiddlewareState { Stopped, Starting, Running, Stopping }
 
         // Cached brushes for performance (static readonly to avoid allocation)
         private static readonly SolidColorBrush BrushFormLabel = new SolidColorBrush(Color.FromRgb(180, 180, 180));
@@ -1172,6 +1182,226 @@ namespace DaroDesigner
 
         #endregion
 
+        #region Middleware Management
+
+        private async void Middleware_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                switch (_middlewareState)
+                {
+                    case MiddlewareState.Stopped:
+                        await StartMiddlewareAsync();
+                        break;
+                    case MiddlewareState.Running:
+                        await StopMiddlewareAsync();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Middleware button error", ex);
+                SetMiddlewareState(MiddlewareState.Stopped);
+                TxtStatus.Text = $"Middleware error: {ex.Message}";
+            }
+        }
+
+        private async Task StartMiddlewareAsync()
+        {
+            SetMiddlewareState(MiddlewareState.Starting);
+
+            var appDir = AppDomain.CurrentDomain.BaseDirectory;
+            var middlewarePath = Path.Combine(appDir, AppConstants.MiddlewareSubDir, AppConstants.MiddlewareExeName);
+
+            if (!File.Exists(middlewarePath))
+            {
+                MessageBox.Show(
+                    $"GraphicsMiddleware.exe not found at:\n{middlewarePath}",
+                    "Middleware Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                SetMiddlewareState(MiddlewareState.Stopped);
+                return;
+            }
+
+            // Check if port is already in use
+            try
+            {
+                var response = await _healthClient.GetAsync(AppConstants.MiddlewareHealthUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    MessageBox.Show(
+                        "Port 5000 is already in use. Another instance of middleware may be running.",
+                        "Port In Use", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    SetMiddlewareState(MiddlewareState.Stopped);
+                    return;
+                }
+            }
+            catch (HttpRequestException) { }
+            catch (TaskCanceledException) { }
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = middlewarePath,
+                WorkingDirectory = Path.GetDirectoryName(middlewarePath),
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            startInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Production";
+
+            try
+            {
+                _middlewareProcess = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+                _middlewareProcess.Exited += OnMiddlewareProcessExited;
+
+                if (!_middlewareProcess.Start())
+                {
+                    SetMiddlewareState(MiddlewareState.Stopped);
+                    TxtStatus.Text = "Failed to start middleware process";
+                    return;
+                }
+
+                Logger.Info($"Middleware process started, PID: {_middlewareProcess.Id}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to start middleware process", ex);
+                SetMiddlewareState(MiddlewareState.Stopped);
+                TxtStatus.Text = $"Middleware start failed: {ex.Message}";
+                return;
+            }
+
+            _middlewareHealthCts = new CancellationTokenSource();
+            var healthOk = await PollHealthUntilReadyAsync(_middlewareHealthCts.Token);
+
+            if (!healthOk)
+            {
+                Logger.Warn("Middleware health check timed out, killing process");
+                await StopMiddlewareAsync();
+                TxtStatus.Text = "Middleware failed to start (health check timeout)";
+                return;
+            }
+
+            SetMiddlewareState(MiddlewareState.Running);
+            TxtStatus.Text = "Middleware running on port 5000";
+
+            // Open default browser
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = AppConstants.MiddlewareBrowseUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Failed to open browser: {ex.Message}");
+            }
+        }
+
+        private async Task<bool> PollHealthUntilReadyAsync(CancellationToken ct)
+        {
+            var deadline = DateTime.UtcNow.AddMilliseconds(AppConstants.MiddlewareHealthTimeoutMs);
+
+            while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
+            {
+                var process = _middlewareProcess;
+                if (process == null || process.HasExited)
+                    return false;
+
+                try
+                {
+                    var response = await _healthClient.GetAsync(AppConstants.MiddlewareHealthUrl, ct);
+                    if (response.IsSuccessStatusCode)
+                        return true;
+                }
+                catch (HttpRequestException) { }
+                catch (TaskCanceledException) when (!ct.IsCancellationRequested) { }
+
+                await Task.Delay(AppConstants.MiddlewareHealthPollMs, ct);
+            }
+
+            return false;
+        }
+
+        private async Task StopMiddlewareAsync()
+        {
+            SetMiddlewareState(MiddlewareState.Stopping);
+
+            _middlewareHealthCts?.Cancel();
+            _middlewareHealthCts?.Dispose();
+            _middlewareHealthCts = null;
+
+            var process = _middlewareProcess;
+            if (process != null && !process.HasExited)
+            {
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                    await Task.Run(() => process.WaitForExit(AppConstants.MiddlewareShutdownTimeoutMs));
+                    Logger.Info("Middleware process stopped");
+                }
+                catch (InvalidOperationException) { }
+                catch (Exception ex)
+                {
+                    Logger.Error("Error stopping middleware process", ex);
+                }
+            }
+
+            CleanupMiddlewareProcess();
+            SetMiddlewareState(MiddlewareState.Stopped);
+            TxtStatus.Text = "Middleware stopped";
+        }
+
+        private void OnMiddlewareProcessExited(object sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (_middlewareState == MiddlewareState.Stopping)
+                    return;
+
+                Logger.Warn($"Middleware process exited unexpectedly, exit code: {_middlewareProcess?.ExitCode}");
+                CleanupMiddlewareProcess();
+                SetMiddlewareState(MiddlewareState.Stopped);
+                TxtStatus.Text = "Middleware stopped unexpectedly";
+            }));
+        }
+
+        private void CleanupMiddlewareProcess()
+        {
+            if (_middlewareProcess != null)
+            {
+                _middlewareProcess.Exited -= OnMiddlewareProcessExited;
+                _middlewareProcess.Dispose();
+                _middlewareProcess = null;
+            }
+        }
+
+        private void SetMiddlewareState(MiddlewareState newState)
+        {
+            _middlewareState = newState;
+            switch (newState)
+            {
+                case MiddlewareState.Stopped:
+                    BtnMiddleware.Content = "Start Middleware";
+                    BtnMiddleware.IsEnabled = true;
+                    break;
+                case MiddlewareState.Starting:
+                    BtnMiddleware.Content = "Starting...";
+                    BtnMiddleware.IsEnabled = false;
+                    break;
+                case MiddlewareState.Running:
+                    BtnMiddleware.Content = "Stop Middleware";
+                    BtnMiddleware.IsEnabled = true;
+                    break;
+                case MiddlewareState.Stopping:
+                    BtnMiddleware.Content = "Stopping...";
+                    BtnMiddleware.IsEnabled = false;
+                    break;
+            }
+        }
+
+        #endregion
+
         #region Window
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -1205,6 +1435,22 @@ namespace DaroDesigner
 
             // Dispose Mosart command lock
             _mosartCommandLock?.Dispose();
+
+            // Stop middleware process
+            if (_middlewareProcess != null && !_middlewareProcess.HasExited)
+            {
+                _middlewareHealthCts?.Cancel();
+                try
+                {
+                    _middlewareProcess.Kill(entireProcessTree: true);
+                    _middlewareProcess.WaitForExit(AppConstants.MiddlewareShutdownTimeoutMs);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"Error killing middleware on close: {ex.Message}");
+                }
+                CleanupMiddlewareProcess();
+            }
 
             _engineWindow?.Close();
         }

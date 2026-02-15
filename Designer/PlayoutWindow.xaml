@@ -52,6 +52,7 @@
                     </Border>
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="16,0"/>
                     <Button Content="Open Engine Window" Click="OpenEngineWindow_Click" Padding="12,4"/>
+                    <Button x:Name="BtnMiddleware" Content="Start Middleware" Click="Middleware_Click" Padding="12,4" Margin="8,0,0,0"/>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <TextBlock x:Name="TxtOnAirStatus" Text="OFF AIR" FontSize="12" FontWeight="Bold"

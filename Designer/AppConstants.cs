@@ -50,6 +50,15 @@ namespace DaroDesigner
         public const int MosartReadTimeoutMs = 10000;
         public const int MosartConnectionTimeoutMs = 30000;
 
+        // Graphics Middleware
+        public const string MiddlewareExeName = "GraphicsMiddleware.exe";
+        public const string MiddlewareSubDir = "Middleware";
+        public const string MiddlewareHealthUrl = "http://localhost:5000/health";
+        public const string MiddlewareBrowseUrl = "http://localhost:5000";
+        public const int MiddlewareHealthPollMs = 500;
+        public const int MiddlewareHealthTimeoutMs = 15000;
+        public const int MiddlewareShutdownTimeoutMs = 5000;
+
         // File Extensions
         public const string ProjectExtension = ".daro";
         public const string TemplateExtension = ".dtemplate";

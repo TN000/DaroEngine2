@@ -52,6 +52,11 @@ Source: "{#BuildDir}\avutil-59.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BuildDir}\swresample-5.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BuildDir}\swscale-8.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BuildDir}\runtimes\win-x64\native\e_sqlite3.dll"; DestDir: "{app}\runtimes\win-x64\native"; Flags: ignoreversion
+; GraphicsMiddleware (self-contained)
+Source: "{#BuildDir}\Middleware\GraphicsMiddleware.exe"; DestDir: "{app}\Middleware"; Flags: ignoreversion
+Source: "{#BuildDir}\Middleware\appsettings.json"; DestDir: "{app}\Middleware"; Flags: ignoreversion
+Source: "{#BuildDir}\Middleware\appsettings.Production.json"; DestDir: "{app}\Middleware"; Flags: ignoreversion
+Source: "{#BuildDir}\Middleware\wwwroot\*"; DestDir: "{app}\Middleware\wwwroot"; Flags: ignoreversion recursesubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
