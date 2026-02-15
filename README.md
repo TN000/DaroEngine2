@@ -105,6 +105,21 @@ DaroEngine2 separates **design** from **playout** — a designer creates animate
 2. **Create a Template** — Build a fill form in the Template Maker that maps input fields to scene properties (e.g., a "Name" field that controls the text layer)
 3. **Save** — Scene as `.daro`, template as `.dtemplate`. These are your reusable building blocks
 
+**File locations:** The playout template browser looks for files in:
+
+```
+Documents\DaroEngine\Templates\
+├── Lower Thirds\
+│   ├── breaking-news.dtemplate
+│   └── breaking-news.daro
+├── Fullscreen\
+│   ├── opener.dtemplate
+│   └── opener.daro
+└── ...
+```
+
+Save your `.dtemplate` and `.daro` files into `Documents\DaroEngine\Templates\`. You can organize them into subfolders — the playout browser will show the folder structure as a tree. Each template links to its scene file via the `LinkedScenePath` property set in the Template Maker.
+
 ### Live Playout Workflow (during the broadcast)
 
 Once your templates are ready, going live is simple — the operator just works with a playlist:
