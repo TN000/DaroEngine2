@@ -223,6 +223,7 @@ Commands: `CUE`, `PLAY`, `STOP`, `PAUSE`, `CONTINUE` — see [CONTRIBUTING.md](C
 
 Community contributions welcome in any of these areas:
 
+- [ ] [EBU OGraf](https://tech.ebu.ch/news/2025/04/ograf-the-ebu's-open-spec-for-cross-platform-graphics-integration) support — render HTML-based `.ograf.json` graphics packages and/or export DaroEngine templates as OGraf web components
 - [ ] Multi-resolution support (4K, custom resolutions)
 - [ ] NDI output (alternative to Spout)
 - [ ] GPU-accelerated text effects (drop shadows, outlines, gradients)
