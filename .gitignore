@@ -54,3 +54,6 @@ graphics_middleware.db
 
 # Autosave
 *.autosave
+
+# Release build artifacts
+release-tmp/
