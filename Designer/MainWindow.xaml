@@ -1,0 +1,1443 @@
+﻿<!-- Designer/MainWindow.xaml -->
+<Window x:Class="DaroDesigner.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DARO DESIGNER v2.0" 
+        Height="900" Width="1600" 
+        MinHeight="700" MinWidth="1200"
+        Background="{StaticResource BgMain}"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/DarkTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Override system colors for menus -->
+            <SolidColorBrush x:Key="{x:Static SystemColors.MenuBrushKey}" Color="#FF2D2D30"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.MenuBarBrushKey}" Color="#FF2D2D30"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.MenuTextBrushKey}" Color="White"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.MenuHighlightBrushKey}" Color="#FF3E3E42"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#FF3E3E42"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>
+            
+            <!-- ComboBox ToggleButton template -->
+            <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="20"/>
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="Border" Grid.ColumnSpan="2" Background="#FF2D2D30" 
+                            BorderBrush="#FF3F3F46" BorderThickness="1"/>
+                    <Border Grid.Column="0" Background="#FF2D2D30" Margin="1"/>
+                    <Path x:Name="Arrow" Grid.Column="1" Fill="White" 
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Data="M0,0 L4,4 L8,0 Z"/>
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="Border" Property="BorderBrush" Value="#FF007ACC"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            
+            <!-- ComboBox style -->
+            <Style TargetType="ComboBox">
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Background" Value="#FF2D2D30"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid>
+                                <ToggleButton x:Name="ToggleButton" 
+                                              Template="{StaticResource ComboBoxToggleButton}"
+                                              Focusable="False" 
+                                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                              ClickMode="Press"/>
+                                <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False"
+                                                  Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  Margin="6,3,23,3" VerticalAlignment="Center"
+                                                  HorizontalAlignment="Left">
+                                    <ContentPresenter.Resources>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Style>
+                                    </ContentPresenter.Resources>
+                                </ContentPresenter>
+                                <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                       AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                    <Grid x:Name="DropDown" SnapsToDevicePixels="True"
+                                          MinWidth="{TemplateBinding ActualWidth}"
+                                          MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                        <Border x:Name="DropDownBorder" Background="#FF2D2D30" 
+                                                BorderBrush="#FF3F3F46" BorderThickness="1"/>
+                                        <ScrollViewer Margin="2" SnapsToDevicePixels="True">
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Popup>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            
+            <!-- ComboBox dropdown item style with template -->
+            <Style TargetType="ComboBoxItem">
+                <Setter Property="Background" Value="#FF2D2D30"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Padding" Value="6,4"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBoxItem">
+                            <Border x:Name="Bd" 
+                                    Background="{TemplateBinding Background}" 
+                                    Padding="{TemplateBinding Padding}"
+                                    BorderThickness="0">
+                                <ContentPresenter/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#FF000000"/>
+                                </Trigger>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#FF000000"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#FF000000"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.InputBindings>
+        <KeyBinding Key="Space" Command="{Binding PlayPauseCommand}"/>
+        <KeyBinding Key="Left" Command="{Binding PrevFrameCommand}"/>
+        <KeyBinding Key="Right" Command="{Binding NextFrameCommand}"/>
+        <KeyBinding Key="Home" Command="{Binding RewindCommand}"/>
+        <KeyBinding Key="End" Command="{Binding ForwardCommand}"/>
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveCommand}"/>
+        <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenCommand}"/>
+        <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding NewCommand}"/>
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="28"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="5"/>
+            <RowDefinition Height="180" MinHeight="100"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+
+        <!-- ==================== MENU BAR ==================== -->
+        <Border Grid.Row="0" Background="{StaticResource BgHeader}">
+            <DockPanel>
+                <!-- Mode Buttons (Right Side) -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="0,0,8,0">
+                    <Border x:Name="BtnModeDesigner" Background="{StaticResource Accent}"
+                            CornerRadius="3" Margin="2,4" Cursor="Hand"
+                            MouseLeftButtonDown="ModeDesigner_Click">
+                        <TextBlock Text="DESIGNER" Foreground="White" FontWeight="Bold"
+                                   FontSize="11" Padding="12,4" VerticalAlignment="Center"/>
+                    </Border>
+                    <Border x:Name="BtnModeTemplate" Background="#FF3C3C3C"
+                            CornerRadius="3" Margin="2,4" Cursor="Hand"
+                            MouseLeftButtonDown="ModeTemplate_Click">
+                        <TextBlock Text="TEMPLATE" Foreground="#CCCCCC" FontWeight="Bold"
+                                   FontSize="11" Padding="12,4" VerticalAlignment="Center"/>
+                    </Border>
+                    <Border x:Name="BtnModePlayout" Background="#FF3C3C3C"
+                            CornerRadius="3" Margin="2,4" Cursor="Hand"
+                            MouseLeftButtonDown="ModePlayout_Click">
+                        <TextBlock Text="PLAYOUT" Foreground="#CCCCCC" FontWeight="Bold"
+                                   FontSize="11" Padding="12,4" VerticalAlignment="Center"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Menu (Left Side) -->
+                <Menu Background="Transparent" Foreground="White" Grid.IsSharedSizeScope="True">
+                    <MenuItem Header="_File" Foreground="White">
+                        <MenuItem Header="_New Project" Click="Menu_NewProject" InputGestureText="Ctrl+N"/>
+                        <MenuItem Header="_Open Project" Click="Menu_OpenProject" InputGestureText="Ctrl+O"/>
+                        <MenuItem Header="_Save Project" Click="Menu_SaveProject" InputGestureText="Ctrl+S"/>
+                        <MenuItem Header="Save _As..." Click="Menu_SaveProjectAs"/>
+                        <Separator/>
+                        <MenuItem Header="E_xit" Click="Menu_Exit"/>
+                    </MenuItem>
+                    <MenuItem Header="_Edit" Foreground="White">
+                        <MenuItem Header="_Undo" IsEnabled="False"/>
+                        <MenuItem Header="_Redo" IsEnabled="False"/>
+                        <Separator/>
+                        <MenuItem Header="Cu_t" IsEnabled="False"/>
+                        <MenuItem Header="_Copy" IsEnabled="False"/>
+                        <MenuItem Header="_Paste" IsEnabled="False"/>
+                        <Separator/>
+                        <MenuItem Header="_Settings..." Click="Menu_Settings"/>
+                    </MenuItem>
+                    <MenuItem Header="_View" Foreground="White">
+                        <MenuItem Header="Reset _Zoom" Click="Menu_ResetZoom"/>
+                    </MenuItem>
+                    <MenuItem Header="_Help" Foreground="White">
+                        <MenuItem Header="_About" Click="Menu_About"/>
+                    </MenuItem>
+                </Menu>
+            </DockPanel>
+        </Border>
+
+        <!-- ==================== MAIN CONTENT ==================== -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150" MinWidth="120"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="280" MinWidth="180"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*" MinWidth="400"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- OBJECTS + LAYERS PANEL (Designer Mode) -->
+            <Grid x:Name="DesignerLeftPanel" Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- OBJECTS TOOLBOX -->
+                <Border Grid.Row="0" Background="{StaticResource BgPanel}" Margin="4,4,2,2">
+                    <StackPanel>
+                        <Border Background="{StaticResource BgHeader}" Padding="6,4">
+                            <TextBlock Text="OBJECTS" Style="{StaticResource HeaderStyle}" FontSize="10"/>
+                        </Border>
+                        <StackPanel x:Name="ObjectsPanel" Margin="4">
+                            <!-- Rectangle -->
+                            <Border Background="#FF3C3C3C" Padding="6,4" Margin="0,2" Cursor="Hand"
+                                    MouseLeftButtonDown="ObjectTool_MouseDown" Tag="Rectangle"
+                                    BorderBrush="#FF505050" BorderThickness="1" CornerRadius="2">
+                                <TextBlock Text="▢ Rectangle" Foreground="White" FontSize="11"/>
+                            </Border>
+                            <!-- Circle -->
+                            <Border Background="#FF3C3C3C" Padding="6,4" Margin="0,2" Cursor="Hand"
+                                    MouseLeftButtonDown="ObjectTool_MouseDown" Tag="Circle"
+                                    BorderBrush="#FF505050" BorderThickness="1" CornerRadius="2">
+                                <TextBlock Text="○ Circle" Foreground="White" FontSize="11"/>
+                            </Border>
+                            <!-- Text -->
+                            <Border Background="#FF3C3C3C" Padding="6,4" Margin="0,2" Cursor="Hand"
+                                    MouseLeftButtonDown="ObjectTool_MouseDown" Tag="Text"
+                                    BorderBrush="#FF505050" BorderThickness="1" CornerRadius="2">
+                                <TextBlock Text="T Text" Foreground="White" FontSize="11"/>
+                            </Border>
+                            <!-- Mask -->
+                            <Border Background="#FF3C3C3C" Padding="6,4" Margin="0,2" Cursor="Hand"
+                                    MouseLeftButtonDown="ObjectTool_MouseDown" Tag="Mask"
+                                    BorderBrush="#FF505050" BorderThickness="1" CornerRadius="2">
+                                <TextBlock Text="◐ Mask" Foreground="White" FontSize="11"/>
+                            </Border>
+                            <!-- Group -->
+                            <Border Background="#FF3C3C3C" Padding="6,4" Margin="0,2" Cursor="Hand"
+                                    MouseLeftButtonDown="ObjectTool_MouseDown" Tag="Group"
+                                    BorderBrush="#FF505050" BorderThickness="1" CornerRadius="2">
+                                <TextBlock Text="📁 Group" Foreground="White" FontSize="11"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- LAYERS -->
+                <Border Grid.Row="1" Background="{StaticResource BgPanel}" Margin="4,2,2,4">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="4,4">
+                            <DockPanel>
+                                <TextBlock Text="LAYERS" Style="{StaticResource HeaderStyle}" VerticalAlignment="Center" FontSize="10"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="▲" Width="18" Height="18" Margin="0,0,2,0" FontSize="9"
+                                            Click="MoveLayerUp_Click" ToolTip="Move Up"/>
+                                    <Button Content="▼" Width="18" Height="18" Margin="0,0,2,0" FontSize="9"
+                                            Click="MoveLayerDown_Click" ToolTip="Move Down"/>
+                                    <Button Content="✕" Width="18" Height="18" FontSize="9"
+                                            Click="DeleteLayer_Click" ToolTip="Delete"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      AllowDrop="True"
+                                      DragOver="LayersTree_DragOver"
+                                      Drop="LayersTree_Drop">
+                            <StackPanel x:Name="LayersPanel" Margin="4"
+                                        AllowDrop="True"
+                                        DragOver="LayersTree_DragOver"
+                                        Drop="LayersTree_Drop"/>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
+            <!-- Splitter 1 -->
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" 
+                          Background="{StaticResource BorderDark}" Cursor="SizeWE"/>
+
+            <!-- PROPERTIES PANEL (Designer Mode) -->
+            <Border x:Name="DesignerPropertiesPanel" Grid.Column="2" Background="{StaticResource BgPanel}" Margin="2,4,2,4">
+                <DockPanel>
+                    <!-- Main tabs: Properties / Transfunctioners -->
+                    <TabControl x:Name="MainPropertiesTabControl" DockPanel.Dock="Top" Background="Transparent" BorderThickness="0">
+                        <TabControl.Resources>
+                            <Style TargetType="TabItem">
+                                <Setter Property="Background" Value="#FF2D2D30"/>
+                                <Setter Property="Foreground" Value="#CCCCCC"/>
+                                <Setter Property="Padding" Value="12,6"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="TabItem">
+                                            <Border x:Name="TabBorder" Background="{TemplateBinding Background}"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter ContentSource="Header"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="TabBorder" Property="Background" Value="#FF3E3E42"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="TabBorder" Property="Background" Value="#FF353535"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </TabControl.Resources>
+
+                        <!-- PROPERTIES TAB -->
+                        <TabItem Header="PROPERTIES">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="PropertiesPanel" Margin="8" IsEnabled="False">
+
+                                    <!-- LAYER NAME -->
+                                    <Grid Style="{StaticResource PropertyRow}" Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Name" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtLayerName" Grid.Column="1" TextChanged="LayerName_Changed"/>
+                                    </Grid>
+
+                                    <!-- TABBED PROPERTIES -->
+                            <TabControl x:Name="PropertiesTabControl" Background="Transparent" BorderThickness="0">
+                                <TabControl.Resources>
+                                    <Style TargetType="TabItem">
+                                        <Setter Property="Background" Value="#FF3C3C3C"/>
+                                        <Setter Property="Foreground" Value="#CCCCCC"/>
+                                        <Setter Property="Padding" Value="8,4"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="TabItem">
+                                                    <Border x:Name="TabBorder" Background="{TemplateBinding Background}"
+                                                            Padding="{TemplateBinding Padding}" Margin="0,0,2,0">
+                                                        <ContentPresenter ContentSource="Header"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="TabBorder" Property="Background" Value="#FF505050"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="TabBorder" Property="Background" Value="#FF454545"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </TabControl.Resources>
+
+                                <!-- OBJ (APPEARANCE) TAB -->
+                                <TabItem Header="OBJ">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                                        <StackPanel>
+                                    <!-- Visible with keyframe -->
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfVisible" Style="{StaticResource KeyframeButton}" 
+                                                Tag="Visible" MouseRightButtonDown="Keyframe_RightClick" 
+                                                Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Visible" Style="{StaticResource LabelStyle}"/>
+                                        <CheckBox x:Name="ChkVisible" Grid.Column="2" 
+                                                  Checked="Visible_Changed" Unchecked="Visible_Changed"/>
+                                    </Grid>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+
+                                <!-- TRANSFORM TAB -->
+                                <TabItem Header="TRANSFORM">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                                        <StackPanel>
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfPosX" Style="{StaticResource KeyframeButton}"
+                                                Tag="PosX" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Pos X" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtPosX" Grid.Column="2" Tag="PosX"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfPosY" Style="{StaticResource KeyframeButton}"
+                                                Tag="PosY" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Pos Y" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtPosY" Grid.Column="2" Tag="PosY"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfSizeX" Style="{StaticResource KeyframeButton}"
+                                                Tag="SizeX" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Size X" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtSizeX" Grid.Column="2" Tag="SizeX"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="24"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfSizeY" Style="{StaticResource KeyframeButton}"
+                                                Tag="SizeY" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Size Y" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtSizeY" Grid.Column="2" Tag="SizeY"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                        <Button x:Name="BtnLockAspect" Grid.Column="3" Content="🔗"
+                                                Width="22" Height="22" Click="LockAspect_Click"
+                                                ToolTip="Lock aspect ratio"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfRotX" Style="{StaticResource KeyframeButton}"
+                                                Tag="RotX" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Rot X" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtRotX" Grid.Column="2" Tag="RotX"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfRotY" Style="{StaticResource KeyframeButton}"
+                                                Tag="RotY" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Rot Y" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtRotY" Grid.Column="2" Tag="RotY"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfRotZ" Style="{StaticResource KeyframeButton}"
+                                                Tag="RotZ" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Rot Z" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtRotZ" Grid.Column="2" Tag="RotZ"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <!-- Anchor Point (Pivot) -->
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Pivot" Style="{StaticResource LabelStyle}" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                        <Grid Grid.Column="2" HorizontalAlignment="Left">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="22"/>
+                                                <RowDefinition Height="22"/>
+                                                <RowDefinition Height="22"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="22"/>
+                                                <ColumnDefinition Width="22"/>
+                                                <ColumnDefinition Width="22"/>
+                                            </Grid.ColumnDefinitions>
+                                            <!-- Top row -->
+                                            <Button x:Name="AnchorTL" Grid.Row="0" Grid.Column="0" Content="◤" FontSize="10"
+                                                    Background="#FF3C3C3C" Foreground="#FFAAAAAA" Margin="1"
+                                                    Click="AnchorPoint_Click" Tag="0,0"/>
+                                            <Button x:Name="AnchorTC" Grid.Row="0" Grid.Column="1" Content="▲" FontSize="10"
+                                                    Background="#FF3C3C3C" Foreground="#FFAAAAAA" Margin="1"
+                                                    Click="AnchorPoint_Click" Tag="0.5,0"/>
+                                            <Button x:Name="AnchorTR" Grid.Row="0" Grid.Column="2" Content="◥" FontSize="10"
+                                                    Background="#FF3C3C3C" Foreground="#FFAAAAAA" Margin="1"
+                                                    Click="AnchorPoint_Click" Tag="1,0"/>
+                                            <!-- Middle row -->
+                                            <Button x:Name="AnchorML" Grid.Row="1" Grid.Column="0" Content="◀" FontSize="10"
+                                                    Background="#FF3C3C3C" Foreground="#FFAAAAAA" Margin="1"
+                                                    Click="AnchorPoint_Click" Tag="0,0.5"/>
+                                            <Button x:Name="AnchorMC" Grid.Row="1" Grid.Column="1" Content="●" FontSize="10"
+                                                    Background="#FF505050" Foreground="#FFFFFFFF" Margin="1"
+                                                    Click="AnchorPoint_Click" Tag="0.5,0.5"/>
+                                            <Button x:Name="AnchorMR" Grid.Row="1" Grid.Column="2" Content="▶" FontSize="10"
+                                                    Background="#FF3C3C3C" Foreground="#FFAAAAAA" Margin="1"
+                                                    Click="AnchorPoint_Click" Tag="1,0.5"/>
+                                            <!-- Bottom row -->
+                                            <Button x:Name="AnchorBL" Grid.Row="2" Grid.Column="0" Content="◣" FontSize="10"
+                                                    Background="#FF3C3C3C" Foreground="#FFAAAAAA" Margin="1"
+                                                    Click="AnchorPoint_Click" Tag="0,1"/>
+                                            <Button x:Name="AnchorBC" Grid.Row="2" Grid.Column="1" Content="▼" FontSize="10"
+                                                    Background="#FF3C3C3C" Foreground="#FFAAAAAA" Margin="1"
+                                                    Click="AnchorPoint_Click" Tag="0.5,1"/>
+                                            <Button x:Name="AnchorBR" Grid.Row="2" Grid.Column="2" Content="◢" FontSize="10"
+                                                    Background="#FF3C3C3C" Foreground="#FFAAAAAA" Margin="1"
+                                                    Click="AnchorPoint_Click" Tag="1,1"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <!-- Show Bounds checkbox -->
+                                    <Grid Style="{StaticResource PropertyRow}" Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Bounds" Style="{StaticResource LabelStyle}"/>
+                                        <CheckBox x:Name="ChkShowBounds" Grid.Column="2" Content="Show"
+                                                  Foreground="#FFCCCCCC" VerticalAlignment="Center"
+                                                  Checked="ShowBounds_Changed" Unchecked="ShowBounds_Changed"/>
+                                    </Grid>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+
+                                <!-- TEXTURE TAB -->
+                                <TabItem Header="TEXTURE">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                                        <StackPanel>
+                                            <!-- Opacity -->
+                                            <Grid Style="{StaticResource PropertyRow}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="55"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="KfOpacity" Style="{StaticResource KeyframeButton}"
+                                                        Tag="Opacity" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                                <TextBlock Grid.Column="1" Text="Opacity" Style="{StaticResource LabelStyle}"/>
+                                                <Grid Grid.Column="2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="50"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Slider x:Name="SldOpacity" Minimum="0" Maximum="1"
+                                                            Value="1" ValueChanged="OpacitySlider_Changed"/>
+                                                    <TextBox x:Name="TxtOpacity" Grid.Column="1" Tag="Opacity"
+                                                             Margin="4,0,0,0" Width="46"
+                                                             TextChanged="PropertyValue_Changed"
+                                                             PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                             LostFocus="NumericInput_LostFocus"
+                                                             KeyDown="NumericInput_KeyDown"
+                                                             PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                                </Grid>
+                                            </Grid>
+
+                                            <!-- Color Picker -->
+                                            <Grid Style="{StaticResource PropertyRow}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="55"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="30"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="1" Text="Color" Style="{StaticResource LabelStyle}"/>
+                                                <Grid Grid.Column="2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="24"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Rectangle x:Name="ColorPreview" Width="20" Height="20"
+                                                               Fill="White" Stroke="Gray" StrokeThickness="1"/>
+                                                    <TextBox x:Name="TxtColor" Grid.Column="1" Margin="4,0,0,0"
+                                                             Text="#FFFFFF" TextChanged="ColorHex_Changed"/>
+                                                </Grid>
+                                                <Button x:Name="BtnColorPicker" Grid.Column="3" Content="..."
+                                                        Click="ColorPicker_Click"/>
+                                            </Grid>
+
+                                            <!-- RGB Values (0-255) with keyframes -->
+                                            <Grid Style="{StaticResource PropertyRow}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="55"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="KfColorR" Style="{StaticResource KeyframeButton}"
+                                                        Tag="ColorR" MouseRightButtonDown="Keyframe_RightClick"
+                                                        Click="Keyframe_LeftClick"/>
+                                                <TextBlock Grid.Column="1" Text="R" Style="{StaticResource LabelStyle}" Foreground="#FFFF6666"/>
+                                                <TextBox x:Name="TxtColorR" Grid.Column="2" Tag="ColorR"
+                                                         TextChanged="ColorComponent_Changed"
+                                                         PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                         LostFocus="NumericInput_LostFocus"
+                                                         KeyDown="NumericInput_KeyDown"
+                                                         PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                            </Grid>
+                                            <Grid Style="{StaticResource PropertyRow}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="55"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="KfColorG" Style="{StaticResource KeyframeButton}"
+                                                        Tag="ColorG" MouseRightButtonDown="Keyframe_RightClick"
+                                                        Click="Keyframe_LeftClick"/>
+                                                <TextBlock Grid.Column="1" Text="G" Style="{StaticResource LabelStyle}" Foreground="#FF66FF66"/>
+                                                <TextBox x:Name="TxtColorG" Grid.Column="2" Tag="ColorG"
+                                                         TextChanged="ColorComponent_Changed"
+                                                         PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                         LostFocus="NumericInput_LostFocus"
+                                                         KeyDown="NumericInput_KeyDown"
+                                                         PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                            </Grid>
+                                            <Grid Style="{StaticResource PropertyRow}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="55"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="KfColorB" Style="{StaticResource KeyframeButton}"
+                                                        Tag="ColorB" MouseRightButtonDown="Keyframe_RightClick"
+                                                        Click="Keyframe_LeftClick"/>
+                                                <TextBlock Grid.Column="1" Text="B" Style="{StaticResource LabelStyle}" Foreground="#FF6666FF"/>
+                                                <TextBox x:Name="TxtColorB" Grid.Column="2" Tag="ColorB"
+                                                         TextChanged="ColorComponent_Changed"
+                                                         PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                         LostFocus="NumericInput_LostFocus"
+                                                         KeyDown="NumericInput_KeyDown"
+                                                         PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                            </Grid>
+
+                                            <!-- Source -->
+                                            <Grid Style="{StaticResource PropertyRow}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="55"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="1" Text="Source" Style="{StaticResource LabelStyle}"/>
+                                                <ComboBox x:Name="CmbTextureSource" Grid.Column="2"
+                                                  SelectionChanged="SourceType_Changed">
+                                            <ComboBoxItem Content="Solid Color"/>
+                                            <ComboBoxItem Content="Spout Input"/>
+                                            <ComboBoxItem Content="Image File"/>
+                                            <ComboBoxItem Content="Video File"/>
+                                        </ComboBox>
+                                    </Grid>
+
+                                    <!-- File Path Panel -->
+                                    <Grid x:Name="FilePathPanel" Style="{StaticResource PropertyRow}" Visibility="Collapsed">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="30"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="File" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtFilePath" Grid.Column="2" IsReadOnly="True"/>
+                                        <Button x:Name="BtnBrowseFile" Grid.Column="3" Content="..."
+                                                Click="BrowseFile_Click"/>
+                                    </Grid>
+
+                                    <!-- Spout Input Panel -->
+                                    <Grid x:Name="SpoutInputPanel" Style="{StaticResource PropertyRow}" Visibility="Collapsed">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="30"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Sender" Style="{StaticResource LabelStyle}"/>
+                                        <ComboBox x:Name="CmbSpoutSenders" Grid.Column="2"
+                                                  SelectionChanged="CmbSpoutSenders_SelectionChanged"/>
+                                        <Button x:Name="BtnRefreshSpout" Grid.Column="3" Content="⟳"
+                                                Click="RefreshSpoutSenders_Click"/>
+                                    </Grid>
+
+                                    <!-- Video Panel -->
+                                    <Grid x:Name="VideoPanel" Visibility="Collapsed">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Video File Path -->
+                                        <Grid Grid.Row="0" Style="{StaticResource PropertyRow}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20"/>
+                                                <ColumnDefinition Width="55"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="30"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="1" Text="Video" Style="{StaticResource LabelStyle}"/>
+                                            <TextBox x:Name="TxtVideoPath" Grid.Column="2" IsReadOnly="True"/>
+                                            <Button Grid.Column="3" Content="..." Click="BrowseVideo_Click"/>
+                                        </Grid>
+
+                                        <!-- Video Controls -->
+                                        <Grid Grid.Row="1" Style="{StaticResource PropertyRow}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20"/>
+                                                <ColumnDefinition Width="55"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button x:Name="KfVideoState" Style="{StaticResource KeyframeButton}"
+                                                    Tag="VideoState" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                            <TextBlock Grid.Column="1" Text="Control" Style="{StaticResource LabelStyle}"/>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                <Button x:Name="BtnVideoPlay" Content="▶" Width="28" Height="24"
+                                                        Click="VideoPlay_Click" ToolTip="Play" Margin="0,0,4,0"/>
+                                                <Button x:Name="BtnVideoPause" Content="⏸" Width="28" Height="24"
+                                                        Click="VideoPause_Click" ToolTip="Pause" Margin="0,0,4,0"/>
+                                                <Button x:Name="BtnVideoStop" Content="⏹" Width="28" Height="24"
+                                                        Click="VideoStop_Click" Margin="0,0,4,0" ToolTip="Stop"/>
+                                                <CheckBox x:Name="ChkVideoLoop" Content="Loop"
+                                                          VerticalAlignment="Center" Margin="8,0,0,0"
+                                                          IsChecked="True"
+                                                          Checked="VideoLoop_Changed" Unchecked="VideoLoop_Changed"
+                                                          ToolTip="Loop video playback"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Video Alpha -->
+                                        <Grid Grid.Row="2" Style="{StaticResource PropertyRow}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20"/>
+                                                <ColumnDefinition Width="55"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="1" Text="Alpha" Style="{StaticResource LabelStyle}"/>
+                                            <CheckBox x:Name="ChkVideoAlpha" Grid.Column="2" Content="Use alpha channel"
+                                                      VerticalAlignment="Center"
+                                                      Checked="VideoAlpha_Changed" Unchecked="VideoAlpha_Changed"
+                                                      ToolTip="Enable alpha channel from video (for videos with transparency mask)"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfTexX" Style="{StaticResource KeyframeButton}"
+                                                Tag="TexX" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Tex X" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtTexX" Grid.Column="2" Tag="TexX"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfTexY" Style="{StaticResource KeyframeButton}"
+                                                Tag="TexY" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Tex Y" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtTexY" Grid.Column="2" Tag="TexY"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfTexW" Style="{StaticResource KeyframeButton}"
+                                                Tag="TexW" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Tex W" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtTexW" Grid.Column="2" Tag="TexW"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="24"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfTexH" Style="{StaticResource KeyframeButton}"
+                                                Tag="TexH" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Tex H" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtTexH" Grid.Column="2" Tag="TexH"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                        <Button x:Name="BtnLockTexAspect" Grid.Column="3" Content="🔗"
+                                                Width="22" Height="22" Click="LockTexAspect_Click"/>
+                                    </Grid>
+
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfTexRot" Style="{StaticResource KeyframeButton}"
+                                                Tag="TexRot" MouseRightButtonDown="Keyframe_RightClick" Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Tex Rot" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtTexRot" Grid.Column="2" Tag="TexRot"
+                                                 TextChanged="PropertyValue_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+
+                                <!-- TEXT TAB (visible only for Text layers) -->
+                                <TabItem x:Name="TextTab" Header="TEXT" Visibility="Collapsed">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                                        <StackPanel>
+                                            <!-- Text Content -->
+                                            <Grid Margin="0,2">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="55"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <Button x:Name="KfTextContent" Style="{StaticResource KeyframeButton}"
+                                                        Tag="TextContent" MouseRightButtonDown="TextKeyframe_RightClick"
+                                                        Click="TextKeyframe_LeftClick" VerticalAlignment="Top" Margin="0,4,0,0"/>
+                                                <TextBlock Grid.Column="1" Text="Text" Style="{StaticResource LabelStyle}" VerticalAlignment="Top" Margin="0,4,0,0"/>
+                                                <TextBox x:Name="TxtTextContent" Grid.Column="2" Grid.RowSpan="2"
+                                                         TextChanged="TextContent_Changed" AcceptsReturn="True"
+                                                         MinHeight="60" MaxHeight="120" TextWrapping="Wrap"
+                                                         VerticalScrollBarVisibility="Auto"
+                                                         Background="#FF2D2D30" Foreground="White"
+                                                         BorderBrush="#FF3F3F46" CaretBrush="White"/>
+                                            </Grid>
+                                    
+                                    <!-- Font Family -->
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Font" Style="{StaticResource LabelStyle}"/>
+                                        <ComboBox x:Name="CmbFontFamily" Grid.Column="2" 
+                                                  SelectionChanged="FontFamily_Changed"/>
+                                    </Grid>
+                                    
+                                    <!-- Font Size with keyframe -->
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfFontSize" Style="{StaticResource KeyframeButton}" 
+                                                Tag="FontSize" MouseRightButtonDown="Keyframe_RightClick"
+                                                Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Size" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtFontSize" Grid.Column="2" Tag="FontSize"
+                                                 TextChanged="FontSize_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+                                    
+                                    <!-- Font Style -->
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Style" Style="{StaticResource LabelStyle}"/>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                            <CheckBox x:Name="ChkFontBold" Content="B" FontWeight="Bold"
+                                                      Checked="FontBold_Changed" Unchecked="FontBold_Changed"
+                                                      Margin="0,0,8,0"/>
+                                            <CheckBox x:Name="ChkFontItalic" Content="I" FontStyle="Italic"
+                                                      Checked="FontItalic_Changed" Unchecked="FontItalic_Changed"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    
+                                    <!-- Text Alignment -->
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Align" Style="{StaticResource LabelStyle}"/>
+                                        <ComboBox x:Name="CmbTextAlignment" Grid.Column="2" 
+                                                  SelectionChanged="TextAlignment_Changed">
+                                            <ComboBoxItem Content="Left"/>
+                                            <ComboBoxItem Content="Center"/>
+                                            <ComboBoxItem Content="Right"/>
+                                        </ComboBox>
+                                    </Grid>
+                                    
+                                    <!-- Line Height with keyframe -->
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfLineHeight" Style="{StaticResource KeyframeButton}" 
+                                                Tag="LineHeight" MouseRightButtonDown="Keyframe_RightClick"
+                                                Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Line H" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtLineHeight" Grid.Column="2" Tag="LineHeight"
+                                                 TextChanged="LineHeight_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+                                    
+                                    <!-- Letter Spacing with keyframe -->
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="KfLetterSpacing" Style="{StaticResource KeyframeButton}"
+                                                Tag="LetterSpacing" MouseRightButtonDown="Keyframe_RightClick"
+                                                Click="Keyframe_LeftClick"/>
+                                        <TextBlock Grid.Column="1" Text="Spacing" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox x:Name="TxtLetterSpacing" Grid.Column="2" Tag="LetterSpacing"
+                                                 TextChanged="LetterSpacing_Changed"
+                                                 PreviewMouseLeftButtonDown="NumericInput_PreviewMouseDown"
+                                                 LostFocus="NumericInput_LostFocus"
+                                                 KeyDown="NumericInput_KeyDown"
+                                                 PreviewMouseWheel="NumericInput_MouseWheel"/>
+                                    </Grid>
+
+                                    <!-- Antialiasing -->
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Render" Style="{StaticResource LabelStyle}"/>
+                                        <ComboBox x:Name="CmbTextAntialias" Grid.Column="2"
+                                                  SelectionChanged="TextAntialias_Changed">
+                                            <ComboBoxItem Content="Smooth"/>
+                                            <ComboBoxItem Content="Sharp"/>
+                                        </ComboBox>
+                                    </Grid>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+
+                                <!-- MASK TAB (visible only for Mask layers) -->
+                                <TabItem x:Name="MaskTab" Header="MASK" Visibility="Collapsed">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                                        <StackPanel>
+                                            <!-- Mask Mode -->
+                                    <Grid Style="{StaticResource PropertyRow}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Mode" Style="{StaticResource LabelStyle}"/>
+                                        <ComboBox x:Name="CmbMaskMode" Grid.Column="2" 
+                                                  SelectionChanged="MaskMode_Changed">
+                                            <ComboBoxItem Content="Inner"/>
+                                            <ComboBoxItem Content="Outer"/>
+                                        </ComboBox>
+                                    </Grid>
+                                    
+                                    <!-- Masked Layers -->
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Layers" Style="{StaticResource LabelStyle}" VerticalAlignment="Top" Margin="0,4,0,0"/>
+                                        <ListBox x:Name="MaskedLayersList" Grid.Column="2"
+                                                 MinHeight="120" MaxHeight="150" SelectionMode="Multiple"
+                                                 Background="#FF2D2D2D" BorderThickness="1" BorderBrush="#FF555555"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Visible"
+                                                 SelectionChanged="MaskedLayers_Changed">
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem">
+                                                    <Setter Property="Foreground" Value="#FFCCCCCC"/>
+                                                    <Setter Property="Padding" Value="8,4"/>
+                                                    <Setter Property="Margin" Value="1"/>
+                                                    <Setter Property="Background" Value="Transparent"/>
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="ListBoxItem">
+                                                                <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                                                        Padding="{TemplateBinding Padding}"
+                                                                        CornerRadius="3">
+                                                                    <ContentPresenter/>
+                                                                </Border>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsSelected" Value="True">
+                                                                        <Setter TargetName="Bd" Property="Background" Value="#FF2E7D32"/>
+                                                                        <Setter Property="Foreground" Value="White"/>
+                                                                    </Trigger>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter TargetName="Bd" Property="Background" Value="#FF4A4A4A"/>
+                                                                    </Trigger>
+                                                                    <MultiTrigger>
+                                                                        <MultiTrigger.Conditions>
+                                                                            <Condition Property="IsSelected" Value="True"/>
+                                                                            <Condition Property="IsMouseOver" Value="True"/>
+                                                                        </MultiTrigger.Conditions>
+                                                                        <Setter TargetName="Bd" Property="Background" Value="#FF388E3C"/>
+                                                                    </MultiTrigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
+                                        </ListBox>
+                                    </Grid>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+                            </TabControl>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+
+                        <!-- TRANSFUNCTIONERS TAB -->
+                        <TabItem Header="TRANSFUNCTIONERS">
+                            <DockPanel>
+                                <!-- Header with count -->
+                                <Border DockPanel.Dock="Top" Background="#FF2D2D30" Padding="8,6">
+                                    <DockPanel>
+                                        <TextBlock Text="Exported Values" Foreground="#CCCCCC" FontSize="11"/>
+                                        <TextBlock x:Name="TxtTransfunctionerCount" Text="(0)"
+                                                   Foreground="#888888" FontSize="11" Margin="6,0,0,0"/>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- Transfunctioners List -->
+                                <ListBox x:Name="TransfunctionersList"
+                                         Background="Transparent" BorderThickness="0"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         SelectionChanged="TransfunctionersList_SelectionChanged"
+                                         MouseDoubleClick="TransfunctionersList_MouseDoubleClick">
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Margin" Value="4,2"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ListBoxItem">
+                                                        <Border x:Name="Bd" Background="#FF2D2D30"
+                                                                CornerRadius="4" Padding="8,6">
+                                                            <ContentPresenter/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsSelected" Value="True">
+                                                                <Setter TargetName="Bd" Property="Background" Value="#FF3E3E42"/>
+                                                                <Setter TargetName="Bd" Property="BorderBrush" Value="#FF007ACC"/>
+                                                                <Setter TargetName="Bd" Property="BorderThickness" Value="1"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Bd" Property="Background" Value="#FF353535"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- Name -->
+                                                <TextBlock Text="{Binding Name}" Foreground="White"
+                                                           FontWeight="SemiBold" FontSize="12"/>
+
+                                                <!-- Target info -->
+                                                <TextBlock Grid.Row="1" Foreground="#888888" FontSize="10">
+                                                    <Run Text="{Binding TargetLayerName, Mode=OneWay}"/>
+                                                    <Run Text=" → "/>
+                                                    <Run Text="{Binding TargetPropertyId, Mode=OneWay}"/>
+                                                </TextBlock>
+
+                                                <!-- Value editor -->
+                                                <TextBox Grid.Row="2" Grid.ColumnSpan="2" Margin="0,4,24,0"
+                                                         Background="#FF1E1E1E" Foreground="White"
+                                                         BorderBrush="#FF3F3F46" BorderThickness="1"
+                                                         Padding="4,2" FontSize="11"
+                                                         Tag="{Binding Id}"
+                                                         Text="{Binding CurrentValue, Mode=OneWay}"
+                                                         PreviewMouseLeftButtonDown="TransfunctionerValue_PreviewMouseDown"
+                                                         GotFocus="TransfunctionerValue_GotFocus"
+                                                         LostFocus="TransfunctionerValue_LostFocus"
+                                                         KeyDown="TransfunctionerValue_KeyDown"
+                                                         PreviewMouseWheel="TransfunctionerValue_MouseWheel"/>
+
+                                                <!-- Delete button -->
+                                                <Button Grid.RowSpan="3" Grid.Column="1" Content="✕"
+                                                        Width="20" Height="20" FontSize="10"
+                                                        Background="Transparent" Foreground="#888888"
+                                                        BorderThickness="0" Cursor="Hand"
+                                                        VerticalAlignment="Top" Margin="0,2,0,0"
+                                                        Click="DeleteTransfunctioner_Click"
+                                                        Tag="{Binding Id}"
+                                                        ToolTip="Delete transfunctioner">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button">
+                                                            <Style.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Foreground" Value="#FF6666"/>
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
+                </DockPanel>
+            </Border>
+
+            <!-- Splitter 2 -->
+            <GridSplitter x:Name="Splitter2" Grid.Column="3" Width="5" HorizontalAlignment="Stretch"
+                          Background="{StaticResource BorderDark}" Cursor="SizeWE"/>
+
+            <!-- PREVIEW PANEL (Engine Render) -->
+            <Border Grid.Column="4" Background="{StaticResource BgPanel}" Margin="2,4,4,4">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="8,6">
+                        <DockPanel>
+                            <TextBlock Text="PREVIEW" Style="{StaticResource HeaderStyle}"/>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <TextBlock x:Name="TxtFps" Text="-- FPS" 
+                                           Style="{StaticResource MonoStyle}" 
+                                           Foreground="{StaticResource TextSecondary}"
+                                           Margin="0,0,12,0"/>
+                                <TextBlock x:Name="TxtResolution" Text="1920×1080" 
+                                           Style="{StaticResource MonoStyle}" 
+                                           Foreground="{StaticResource TextSecondary}"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Background="#000000" Margin="8">
+                        <Viewbox Stretch="Uniform">
+                            <Border Width="1920" Height="1080" Background="#000000" ClipToBounds="True">
+                                <Grid>
+                                    <!-- Engine rendered output -->
+                                    <Image x:Name="PreviewImage" 
+                                           Width="1920" Height="1080"
+                                           Stretch="None"
+                                           RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                    
+                                    <!-- Interaction overlay (transparent) -->
+                                    <Canvas x:Name="InteractionCanvas" 
+                                            Width="1920" Height="1080"
+                                            Background="Transparent"
+                                            MouseLeftButtonDown="Preview_MouseDown"
+                                            MouseMove="Preview_MouseMove"
+                                            MouseLeftButtonUp="Preview_MouseUp"/>
+                                </Grid>
+                            </Border>
+                        </Viewbox>
+                    </Border>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- Horizontal Splitter -->
+        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      Background="{StaticResource BorderDark}" Cursor="SizeNS"/>
+
+        <!-- ==================== TIMELINE AREA ==================== -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="140"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ANIMATIONS LIST -->
+            <Border Grid.Column="0" Background="{StaticResource BgPanel}" Margin="4,2,2,2">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="8,6">
+                        <TextBlock Text="ANIMATIONS" Style="{StaticResource HeaderStyle}"/>
+                    </Border>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,8,8,4">
+                        <Button Content="+ New" Width="60" Click="NewAnimation_Click" Margin="0,0,4,0"/>
+                        <Button Content="- Del" Width="60" Click="DeleteAnimation_Click"/>
+                    </StackPanel>
+                    <Grid DockPanel.Dock="Top" Margin="8,4,8,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Name:" Style="{StaticResource LabelStyle}"/>
+                        <TextBox x:Name="TxtAnimName" Grid.Column="1" Margin="4,0"
+                                 TextChanged="AnimName_Changed"/>
+                    </Grid>
+                    <Grid DockPanel.Dock="Top" Margin="8,2,8,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Length:" Style="{StaticResource LabelStyle}"/>
+                        <TextBox x:Name="TxtAnimLength" Grid.Column="1" Margin="4,0"
+                                 TextChanged="AnimLength_Changed"/>
+                        <TextBlock Grid.Column="2" Text="fr" Style="{StaticResource LabelStyle}"/>
+                    </Grid>
+                    <ListBox x:Name="AnimationsList" 
+                             SelectionChanged="AnimationsList_SelectionChanged"
+                             Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- TIMELINE -->
+            <Border Grid.Column="1" Background="{StaticResource BgPanel}" Margin="2,2,2,2">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Height="24">
+                        <Canvas x:Name="TimelineRuler" ClipToBounds="True"
+                                MouseLeftButtonDown="TimelineRuler_MouseDown"
+                                MouseMove="TimelineRuler_MouseMove"
+                                MouseLeftButtonUp="TimelineRuler_MouseUp"/>
+                    </Border>
+                    <ScrollViewer x:Name="TimelineScroll" 
+                                  HorizontalScrollBarVisibility="Auto" 
+                                  VerticalScrollBarVisibility="Auto"
+                                  PreviewMouseWheel="Timeline_MouseWheel">
+                        <Canvas x:Name="TimelineCanvas" Background="{StaticResource BgMain}" 
+                                Height="140" Width="2000" ClipToBounds="True"
+                                MouseLeftButtonDown="TimelineCanvas_MouseDown"
+                                MouseMove="TimelineCanvas_MouseMove"
+                                MouseLeftButtonUp="TimelineCanvas_MouseUp">
+                            <Line x:Name="Playhead" X1="0" Y1="0" X2="0" Y2="200" 
+                                  Stroke="#ff4444" StrokeThickness="2" IsHitTestVisible="False"/>
+                        </Canvas>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- KEYFRAME PROPERTIES -->
+            <Border Grid.Column="2" Background="{StaticResource BgPanel}" Margin="2,2,4,2">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="6,6">
+                        <TextBlock Text="KEYFRAME" Style="{StaticResource HeaderStyle}" FontSize="10"/>
+                    </Border>
+                    <StackPanel x:Name="KeyframePropertiesPanel" Margin="8,8" Visibility="Collapsed">
+                        <TextBlock x:Name="TxtKeyframeInfo" Text="Frame: --" 
+                                   Style="{StaticResource LabelStyle}" Margin="0,0,0,8"/>
+                        
+                        <!-- Ease Out (acceleration) -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Out" Style="{StaticResource LabelStyle}" 
+                                       ToolTip="Acceleration (0-100%)"/>
+                            <TextBox x:Name="TxtEaseOut" Grid.Column="1" 
+                                     TextChanged="EaseOut_Changed"/>
+                        </Grid>
+                        
+                        <!-- Ease In (deceleration) -->
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="In" Style="{StaticResource LabelStyle}"
+                                       ToolTip="Deceleration (0-100%)"/>
+                            <TextBox x:Name="TxtEaseIn" Grid.Column="1" 
+                                     TextChanged="EaseIn_Changed"/>
+                        </Grid>
+                        
+                        <TextBlock Text="0,0 = linear" Foreground="{StaticResource TextSecondary}" 
+                                   FontSize="9" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <!-- Empty state -->
+                    <TextBlock x:Name="TxtNoKeyframe" Text="Select a keyframe" 
+                               Foreground="{StaticResource TextSecondary}"
+                               FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Margin="8"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- ==================== TRANSPORT BAR ==================== -->
+        <Border Grid.Row="4" Background="{StaticResource BgHeader}">
+            <Grid Margin="8,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Transport Buttons -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource TransportButton}" Content="⏮" 
+                            Click="Rewind_Click" ToolTip="Rewind (Home)"/>
+                    <Button Style="{StaticResource TransportButton}" Content="◀" 
+                            Click="PrevFrame_Click" ToolTip="Previous Frame (←)" Margin="2,0"/>
+                    <Button x:Name="BtnPlay" Style="{StaticResource TransportButton}" 
+                            Content="▶" Click="Play_Click" ToolTip="Play/Pause (Space)" 
+                            Width="48" Background="{StaticResource PlayColor}"/>
+                    <Button Style="{StaticResource TransportButton}" Content="▶" 
+                            Click="NextFrame_Click" ToolTip="Next Frame (→)" Margin="2,0"/>
+                    <Button Style="{StaticResource TransportButton}" Content="⏭" 
+                            Click="Forward_Click" ToolTip="Forward (End)"/>
+                </StackPanel>
+
+                <!-- Frame Counter -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
+                    <Button Style="{StaticResource SmallButton}" Content="◀" Click="FrameDown_Click"/>
+                    <TextBox x:Name="TxtCurrentFrame" Width="60" Margin="4,0" 
+                             TextAlignment="Center" Text="0" 
+                             TextChanged="CurrentFrame_Changed"/>
+                    <Button Style="{StaticResource SmallButton}" Content="▶" Click="FrameUp_Click"/>
+                    <TextBlock x:Name="TxtTotalFrames" Text="/ 250 fr" 
+                               Style="{StaticResource MonoStyle}" 
+                               VerticalAlignment="Center" Margin="8,0,0,0"/>
+                </StackPanel>
+
+                <!-- Status -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="EngineIndicator" Width="10" Height="10" 
+                             Fill="{StaticResource DisconnectedColor}" Margin="0,0,8,0"/>
+                    <TextBlock x:Name="TxtEngineStatus" Text="Engine: Initializing..." 
+                               Style="{StaticResource LabelStyle}" Margin="0,0,12,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,56 @@
+# Build output
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+*.db
+*.opendb
+*.VC.db
+
+# NuGet
+packages/
+*.nupkg
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+
+# Logs
+*.log
+
+# OS artifacts
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+nul
+
+# FFmpeg third-party binaries (downloaded by setup-ffmpeg.ps1)
+ThirdParty/ffmpeg/bin/
+ThirdParty/ffmpeg/lib/
+ThirdParty/ffmpeg/include/
+
+# Claude Code
+.claude/
+
+# SQLite databases (generated at runtime)
+*.db-shm
+*.db-wal
+graphics_middleware.db
+
+# Autosave
+*.autosave

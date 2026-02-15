@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaroEngine - Mosart Control</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface2: #1a1a26;
+            --surface3: #22222e;
+            --border: #2a2a3a;
+            --border-hover: #3a3a4e;
+            --text: #e8e8f0;
+            --text2: #8888a0;
+            --text3: #55556a;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-glow: rgba(99,102,241,0.15);
+            --green: #22c55e;
+            --green-dim: rgba(34,197,94,0.15);
+            --red: #ef4444;
+            --red-dim: rgba(239,68,68,0.12);
+            --orange: #f59e0b;
+            --orange-dim: rgba(245,158,11,0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+
+        .topbar-brand svg { opacity: 0.7; }
+
+        .topbar-nav { display: flex; gap: 4px; }
+
+        .topbar-nav a {
+            padding: 6px 14px;
+            border-radius: 6px;
+            color: var(--text2);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .topbar-nav a:hover { color: var(--text); background: var(--surface2); }
+        .topbar-nav a.active { color: var(--accent); background: var(--accent-glow); }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Status */
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--surface2);
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+            transition: background 0.2s;
+        }
+
+        .status-dot.ok { background: var(--green); }
+
+        .status-label { color: var(--text2); }
+
+        /* Input */
+        .input-group { margin-bottom: 20px; }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text2);
+            margin-bottom: 6px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: 'Consolas', 'SF Mono', monospace;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .input-group input:focus { border-color: var(--accent); }
+        .input-group input::placeholder { color: var(--text3); }
+
+        /* Transport buttons */
+        .transport {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .transport-btn {
+            padding: 18px 12px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.12s;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .transport-btn:active { transform: scale(0.96); }
+        .transport-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .transport-btn.cue {
+            background: var(--orange-dim);
+            color: var(--orange);
+            border: 1px solid rgba(245,158,11,0.2);
+        }
+
+        .transport-btn.cue:hover:not(:disabled) {
+            background: rgba(245,158,11,0.2);
+            border-color: var(--orange);
+        }
+
+        .transport-btn.play {
+            background: var(--green-dim);
+            color: var(--green);
+            border: 1px solid rgba(34,197,94,0.2);
+        }
+
+        .transport-btn.play:hover:not(:disabled) {
+            background: rgba(34,197,94,0.2);
+            border-color: var(--green);
+        }
+
+        .transport-btn.stop {
+            background: var(--red-dim);
+            color: var(--red);
+            border: 1px solid rgba(239,68,68,0.15);
+        }
+
+        .transport-btn.stop:hover:not(:disabled) {
+            background: rgba(239,68,68,0.18);
+            border-color: var(--red);
+        }
+
+        .transport-hint {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text3);
+            margin-top: 10px;
+        }
+
+        .transport-hint kbd {
+            display: inline-block;
+            padding: 1px 5px;
+            background: var(--surface3);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 0.72rem;
+        }
+
+        /* Log */
+        .log-area {
+            background: var(--surface2);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            max-height: 320px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'SF Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.7;
+        }
+
+        .log-line {
+            display: flex;
+            gap: 8px;
+            padding: 1px 0;
+        }
+
+        .log-line .ts { color: var(--text3); white-space: nowrap; min-width: 60px; }
+        .log-line.send .msg { color: #93c5fd; }
+        .log-line.recv .msg { color: #86efac; }
+        .log-line.err .msg { color: #fca5a5; }
+        .log-line.info .msg { color: var(--text2); }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="topbar-brand">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            DaroEngine Graphics Middleware
+        </div>
+        <div class="topbar-nav">
+            <a href="/">Templates</a>
+            <a href="/control.html" class="active">Mosart Control</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Transport Control
+            </div>
+
+            <div class="status-row">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span class="status-label" id="statusText">Disconnected</span>
+                </div>
+                <span style="color:var(--text3);font-family:monospace;" id="portInfo">TCP :5555</span>
+            </div>
+
+            <div class="input-group">
+                <label>Item ID (GUID)</label>
+                <input type="text" id="itemId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" spellcheck="false">
+            </div>
+
+            <div class="transport">
+                <button class="transport-btn cue" id="cueBtn">Cue</button>
+                <button class="transport-btn play" id="playBtn">Play</button>
+                <button class="transport-btn stop" id="stopBtn">Stop</button>
+            </div>
+
+            <div class="transport-hint">
+                <kbd>C</kbd> Cue &nbsp; <kbd>P</kbd> Play &nbsp; <kbd>S</kbd> Stop
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                Log
+            </div>
+            <div class="log-area" id="log">
+                <div class="log-line info"><span class="ts">--:--</span><span class="msg">Ready</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = window.location.origin;
+
+        function esc(t) {
+            if (t == null) return '';
+            const d = document.createElement('div');
+            d.textContent = String(t);
+            return d.innerHTML;
+        }
+
+        function ts() {
+            return new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function log(msg, type = 'info') {
+            const area = document.getElementById('log');
+            const line = document.createElement('div');
+            line.className = `log-line ${type}`;
+            line.innerHTML = `<span class="ts">${ts()}</span><span class="msg">${esc(msg)}</span>`;
+            area.appendChild(line);
+            area.scrollTop = area.scrollHeight;
+            while (area.children.length > 50) area.removeChild(area.firstChild);
+        }
+
+        function updateStatus(ok) {
+            document.getElementById('statusDot').classList.toggle('ok', ok);
+            document.getElementById('statusText').textContent = ok ? 'Server online' : 'Disconnected';
+        }
+
+        async function checkConnection() {
+            try {
+                const res = await fetch(`${API}/health`);
+                updateStatus(res.ok);
+                if (res.ok) {
+                    const data = await res.json();
+                    const mosart = data?.checks?.find(c => c.name === 'mosart');
+                    if (mosart?.data?.port) {
+                        const port = parseInt(mosart.data.port, 10);
+                        if (!isNaN(port)) document.getElementById('portInfo').textContent = `TCP :${port}`;
+                    }
+                }
+            } catch { updateStatus(false); }
+        }
+
+        async function sendCommand(cmd) {
+            const itemId = document.getElementById('itemId').value.trim();
+            if (!itemId) { log('Error: enter Item ID', 'err'); return; }
+
+            const guidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!guidRe.test(itemId)) { log('Error: invalid GUID format', 'err'); return; }
+
+            const names = ['CUE', 'PLAY', 'STOP'];
+            log(`>> ${itemId}|${cmd} (${names[cmd]})`, 'send');
+
+            try {
+                let endpoint;
+                switch (cmd) {
+                    case 0: endpoint = `/api/control/cue/${itemId}`; break;
+                    case 1: endpoint = `/api/control/play`; break;
+                    case 2: endpoint = `/api/control/stop`; break;
+                }
+                const res = await fetch(`${API}${endpoint}`, { method: 'POST' });
+                const text = await res.text();
+                log(`<< ${res.ok ? 'OK' : 'ERROR'}: ${text}`, res.ok ? 'recv' : 'err');
+            } catch (e) {
+                log(`<< ERROR: ${e.message}`, 'err');
+            }
+        }
+
+        document.getElementById('cueBtn').addEventListener('click', () => sendCommand(0));
+        document.getElementById('playBtn').addEventListener('click', () => sendCommand(1));
+        document.getElementById('stopBtn').addEventListener('click', () => sendCommand(2));
+
+        document.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT') return;
+            switch (e.key.toLowerCase()) {
+                case 'c': sendCommand(0); break;
+                case 'p': sendCommand(1); break;
+                case 's': sendCommand(2); break;
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkConnection();
+            setInterval(checkConnection, 5000);
+            log('Shortcuts: C=CUE, P=PLAY, S=STOP', 'info');
+        });
+    </script>
+</body>
+</html>

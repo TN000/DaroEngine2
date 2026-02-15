@@ -1,0 +1,585 @@
+<!-- Designer/TemplateWindow.xaml -->
+<Window x:Class="DaroDesigner.TemplateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:DaroDesigner.Models"
+        Title="DARO TEMPLATE MAKER"
+        Height="800" Width="1400"
+        MinHeight="600" MinWidth="1000"
+        Background="{StaticResource BgMain}"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/DarkTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="28"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="5"/>
+            <RowDefinition Height="180" MinHeight="120"/>
+        </Grid.RowDefinitions>
+
+        <!-- ==================== MENU BAR ==================== -->
+        <Border Grid.Row="0" Background="{StaticResource BgHeader}">
+            <DockPanel Margin="8,0">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <Menu Background="Transparent">
+                        <MenuItem Header="_File" Foreground="White">
+                            <MenuItem Header="_New Template" Click="Menu_NewTemplate" InputGestureText="Ctrl+N"/>
+                            <MenuItem Header="_Open Template" Click="Menu_OpenTemplate" InputGestureText="Ctrl+O"/>
+                            <MenuItem Header="_Save Template" Click="Menu_SaveTemplate" InputGestureText="Ctrl+S"/>
+                            <MenuItem Header="Save _As..." Click="Menu_SaveTemplateAs"/>
+                            <Separator/>
+                            <MenuItem Header="_Close" Click="Menu_Close"/>
+                        </MenuItem>
+                        <MenuItem Header="_Edit" Foreground="White">
+                            <MenuItem Header="_Delete Element" Click="Menu_DeleteElement" InputGestureText="Del"/>
+                            <MenuItem Header="_Duplicate Element" Click="Menu_DuplicateElement" InputGestureText="Ctrl+D"/>
+                        </MenuItem>
+                        <MenuItem Header="_View" Foreground="White">
+                            <MenuItem Header="_Reset Canvas Size" Click="Menu_ResetCanvasSize"/>
+                        </MenuItem>
+                    </Menu>
+                </StackPanel>
+                <TextBlock Text="TEMPLATE MAKER" Foreground="{StaticResource Accent}"
+                           FontWeight="Bold" VerticalAlignment="Center" Margin="20,0,0,0"/>
+            </DockPanel>
+        </Border>
+
+        <!-- ==================== MAIN CONTENT ==================== -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" MinWidth="150"/>  <!-- 0: TEMPLATES -->
+                <ColumnDefinition Width="5"/>                    <!-- 1: Splitter -->
+                <ColumnDefinition Width="140" MinWidth="100"/>   <!-- 2: OBJECTS -->
+                <ColumnDefinition Width="5"/>                    <!-- 3: Splitter -->
+                <ColumnDefinition Width="180" MinWidth="140"/>   <!-- 4: SCENE -->
+                <ColumnDefinition Width="5"/>                    <!-- 5: Splitter -->
+                <ColumnDefinition Width="*" MinWidth="400"/>     <!-- 6: CANVAS -->
+                <ColumnDefinition Width="5"/>                    <!-- 7: Splitter -->
+                <ColumnDefinition Width="220" MinWidth="180"/>   <!-- 8: PROPERTIES -->
+            </Grid.ColumnDefinitions>
+
+            <!-- TEMPLATES LIST -->
+            <Border Grid.Column="0" Background="{StaticResource BgPanel}" Margin="4,4,2,4">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="8,6">
+                        <TextBlock Text="TEMPLATES" Style="{StaticResource HeaderStyle}"/>
+                    </Border>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4,4">
+                        <Button Content="+ New" Width="55" Click="NewTemplate_Click" Margin="0,0,4,0"
+                                ToolTip="Create new template"/>
+                        <Button Content="+ Folder" Width="55" Click="NewFolder_Click" Margin="0,0,4,0"
+                                ToolTip="Create new folder"/>
+                        <Button Content="- Del" Width="45" Click="DeleteTemplate_Click"
+                                ToolTip="Delete selected"/>
+                    </StackPanel>
+                    <TreeView x:Name="TemplatesTree" Background="Transparent" BorderThickness="0"
+                              SelectedItemChanged="TemplatesTree_SelectedItemChanged"
+                              AllowDrop="True" DragOver="TemplatesTree_DragOver" Drop="TemplatesTree_Drop">
+                        <TreeView.Resources>
+                            <HierarchicalDataTemplate DataType="{x:Type models:TemplateFolderModel}"
+                                                      ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📁 " FontSize="12"/>
+                                    <TextBlock Text="{Binding Name}" Foreground="White"/>
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                            <DataTemplate DataType="{x:Type models:TemplateItemModel}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📄 " FontSize="12"/>
+                                    <TextBlock Text="{Binding Name}" Foreground="#CCCCCC"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </TreeView.Resources>
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="IsExpanded" Value="True"/>
+                                <Setter Property="Padding" Value="2"/>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                    </TreeView>
+                </DockPanel>
+            </Border>
+
+            <!-- Splitter 1 -->
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
+                          Background="{StaticResource BorderDark}" Cursor="SizeWE"/>
+
+            <!-- OBJECTS TOOLBOX -->
+            <Border Grid.Column="2" Background="{StaticResource BgPanel}" Margin="2,4,2,4">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="8,6">
+                        <TextBlock Text="OBJECTS" Style="{StaticResource HeaderStyle}"/>
+                    </Border>
+                    <StackPanel Margin="8,8">
+                        <!-- Label -->
+                        <Border Background="#FF3C3C3C" Padding="8,6" Margin="0,2" Cursor="Hand"
+                                MouseLeftButtonDown="ToolboxItem_MouseDown" Tag="Label"
+                                BorderBrush="#FF505050" BorderThickness="1" CornerRadius="3"
+                                ToolTip="Static label text">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Aa" Foreground="#FF888888" FontWeight="Bold" Width="20"/>
+                                <TextBlock Text="Label" Foreground="White" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- TextBox -->
+                        <Border Background="#FF3C3C3C" Padding="8,6" Margin="0,2" Cursor="Hand"
+                                MouseLeftButtonDown="ToolboxItem_MouseDown" Tag="TextBox"
+                                BorderBrush="#FF505050" BorderThickness="1" CornerRadius="3"
+                                ToolTip="Single-line text input">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="[_]" Foreground="#FF888888" FontWeight="Bold" Width="20"/>
+                                <TextBlock Text="Text Box" Foreground="White" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Multiline TextBox -->
+                        <Border Background="#FF3C3C3C" Padding="8,6" Margin="0,2" Cursor="Hand"
+                                MouseLeftButtonDown="ToolboxItem_MouseDown" Tag="MultilineTextBox"
+                                BorderBrush="#FF505050" BorderThickness="1" CornerRadius="3"
+                                ToolTip="Multi-line text area">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="[=]" Foreground="#FF888888" FontWeight="Bold" Width="20"/>
+                                <TextBlock Text="Text Area" Foreground="White" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Separator Margin="0,12,0,8" Background="#FF3F3F46"/>
+
+                        <TextBlock Text="Drag to canvas" Foreground="#FF666666"
+                                   FontSize="10" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Splitter 2 -->
+            <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch"
+                          Background="{StaticResource BorderDark}" Cursor="SizeWE"/>
+
+            <!-- SCENE PANEL (Load scene, show transfunctioners) -->
+            <Border Grid.Column="4" Background="{StaticResource BgPanel}" Margin="2,4,2,4">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="8,6">
+                        <TextBlock Text="SCENE" Style="{StaticResource HeaderStyle}"/>
+                    </Border>
+
+                    <!-- Scene Loading -->
+                    <StackPanel DockPanel.Dock="Top" Margin="8,8,8,4">
+                        <Button Content="Load Scene..." Click="LoadScene_Click" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="TxtLoadedScene" Text="No scene loaded"
+                                   Foreground="#FF888888" FontSize="10" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <Separator Margin="8,4" Background="#FF3F3F46"/>
+
+                    <!-- Transfunctioners Header -->
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="8,4" Margin="0,4,0,0">
+                        <TextBlock Text="TRANSFUNCTIONERS" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
+                    </Border>
+
+                    <!-- Transfunctioners List -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="4">
+                        <ItemsControl x:Name="TransfunctionersList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#FF3C3C3C" Padding="8,4" Margin="0,2" Cursor="Hand"
+                                            MouseLeftButtonDown="TransfunctionerItem_MouseDown"
+                                            BorderBrush="#FF505050" BorderThickness="1" CornerRadius="3"
+                                            ToolTip="Drag to canvas to create linked TextBox">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="11"/>
+                                            <TextBlock Text="{Binding TargetPropertyId}" Foreground="#FF888888" FontSize="9"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <TextBlock Text="Drag to canvas" Foreground="#FF666666"
+                               FontSize="10" HorizontalAlignment="Center" Margin="0,4,0,8"
+                               DockPanel.Dock="Bottom"/>
+                </DockPanel>
+            </Border>
+
+            <!-- Splitter 3 -->
+            <GridSplitter Grid.Column="5" Width="5" HorizontalAlignment="Stretch"
+                          Background="{StaticResource BorderDark}" Cursor="SizeWE"/>
+
+            <!-- TEMPLATE CANVAS -->
+            <Border Grid.Column="6" Background="{StaticResource BgPanel}" Margin="2,4,2,4">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="8,6">
+                        <DockPanel>
+                            <TextBlock Text="TEMPLATE CANVAS" Style="{StaticResource HeaderStyle}"/>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <TextBlock Text="Size:" Foreground="{StaticResource TextSecondary}"
+                                           VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="TxtCanvasWidth" Width="50" Text="400"
+                                         TextChanged="CanvasSize_Changed"/>
+                                <TextBlock Text=" x " Foreground="{StaticResource TextSecondary}"
+                                           VerticalAlignment="Center"/>
+                                <TextBox x:Name="TxtCanvasHeight" Width="50" Text="200"
+                                         TextChanged="CanvasSize_Changed"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Background="#FF1A1A1A">
+                        <Grid>
+                            <!-- Checkerboard background -->
+                            <Rectangle x:Name="CanvasBackground"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Margin="20">
+                                <Rectangle.Fill>
+                                    <DrawingBrush TileMode="Tile" Viewport="0,0,20,20" ViewportUnits="Absolute">
+                                        <DrawingBrush.Drawing>
+                                            <DrawingGroup>
+                                                <GeometryDrawing Brush="#FF2A2A2A">
+                                                    <GeometryDrawing.Geometry>
+                                                        <RectangleGeometry Rect="0,0,20,20"/>
+                                                    </GeometryDrawing.Geometry>
+                                                </GeometryDrawing>
+                                                <GeometryDrawing Brush="#FF252525">
+                                                    <GeometryDrawing.Geometry>
+                                                        <GeometryGroup>
+                                                            <RectangleGeometry Rect="0,0,10,10"/>
+                                                            <RectangleGeometry Rect="10,10,10,10"/>
+                                                        </GeometryGroup>
+                                                    </GeometryDrawing.Geometry>
+                                                </GeometryDrawing>
+                                            </DrawingGroup>
+                                        </DrawingBrush.Drawing>
+                                    </DrawingBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+
+                            <!-- Template canvas -->
+                            <Border x:Name="TemplateCanvasBorder"
+                                    Background="#FF1E1E1E"
+                                    BorderBrush="{StaticResource Accent}" BorderThickness="1"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Margin="20"
+                                    AllowDrop="True"
+                                    DragEnter="TemplateCanvas_DragEnter"
+                                    DragOver="TemplateCanvas_DragOver"
+                                    Drop="TemplateCanvas_Drop">
+                                <Canvas x:Name="TemplateCanvas"
+                                        Width="400" Height="200"
+                                        ClipToBounds="True"
+                                        MouseLeftButtonDown="TemplateCanvas_MouseDown"
+                                        MouseMove="TemplateCanvas_MouseMove"
+                                        MouseLeftButtonUp="TemplateCanvas_MouseUp"
+                                        Background="Transparent"/>
+                            </Border>
+                        </Grid>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- Splitter 4 -->
+            <GridSplitter Grid.Column="7" Width="5" HorizontalAlignment="Stretch"
+                          Background="{StaticResource BorderDark}" Cursor="SizeWE"/>
+
+            <!-- PROPERTIES PANEL -->
+            <Border Grid.Column="8" Background="{StaticResource BgPanel}" Margin="2,4,4,4">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="8,6">
+                        <TextBlock Text="PROPERTIES" Style="{StaticResource HeaderStyle}"/>
+                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="PropertiesPanel" Margin="8" IsEnabled="False">
+
+                            <!-- Element Name -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Name" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="TxtElementName" Grid.Column="1"
+                                         TextChanged="ElementName_Changed"/>
+                            </Grid>
+
+                            <!-- Position -->
+                            <TextBlock Text="POSITION" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}"
+                                       FontSize="10" Margin="0,8,0,4"/>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="X" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="TxtElementX" Grid.Column="1"
+                                         TextChanged="ElementPosition_Changed" Tag="X"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Y" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="TxtElementY" Grid.Column="1"
+                                         TextChanged="ElementPosition_Changed" Tag="Y"/>
+                            </Grid>
+
+                            <!-- Size -->
+                            <TextBlock Text="SIZE" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}"
+                                       FontSize="10" Margin="0,8,0,4"/>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Width" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="TxtElementWidth" Grid.Column="1"
+                                         TextChanged="ElementSize_Changed" Tag="Width"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Height" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="TxtElementHeight" Grid.Column="1"
+                                         TextChanged="ElementSize_Changed" Tag="Height"/>
+                            </Grid>
+
+                            <!-- Text -->
+                            <TextBlock Text="TEXT" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}"
+                                       FontSize="10" Margin="0,8,0,4"/>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Default" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="TxtElementText" Grid.Column="1"
+                                         TextChanged="ElementText_Changed"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Font" Style="{StaticResource LabelStyle}"/>
+                                <ComboBox x:Name="CmbElementFont" Grid.Column="1"
+                                          SelectionChanged="ElementFont_Changed"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Size" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="TxtElementFontSize" Grid.Column="1"
+                                         TextChanged="ElementFontSize_Changed"/>
+                            </Grid>
+
+                            <!-- Colors -->
+                            <TextBlock Text="COLORS" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}"
+                                       FontSize="10" Margin="0,8,0,4"/>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Text" Style="{StaticResource LabelStyle}"/>
+                                <Rectangle x:Name="ForegroundPreview" Grid.Column="1"
+                                           Width="18" Height="18" Fill="White"
+                                           Stroke="#FF555555" StrokeThickness="1"/>
+                                <TextBox x:Name="TxtElementForeground" Grid.Column="2" Margin="4,0,0,0"
+                                         TextChanged="ElementForeground_Changed"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Back" Style="{StaticResource LabelStyle}"/>
+                                <Rectangle x:Name="BackgroundPreview" Grid.Column="1"
+                                           Width="18" Height="18" Fill="Transparent"
+                                           Stroke="#FF555555" StrokeThickness="1"/>
+                                <TextBox x:Name="TxtElementBackground" Grid.Column="2" Margin="4,0,0,0"
+                                         TextChanged="ElementBackground_Changed"/>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- Horizontal Splitter -->
+        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      Background="{StaticResource BorderDark}" Cursor="SizeNS"/>
+
+        <!-- ==================== ANIMATIONS AREA ==================== -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="140"/>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ACTIONS LIST -->
+            <Border Grid.Column="0" Background="{StaticResource BgPanel}" Margin="4,2,2,4">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="6,4">
+                        <TextBlock Text="ACTIONS" Style="{StaticResource HeaderStyle}" FontSize="10"/>
+                    </Border>
+                    <StackPanel Margin="8,8">
+                        <!-- Play -->
+                        <Border Background="#FF2E7D32" Padding="8,4" Margin="0,2" Cursor="Hand"
+                                MouseLeftButtonDown="ActionItem_MouseDown" Tag="Play"
+                                BorderBrush="#FF388E3C" BorderThickness="1" CornerRadius="3">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="▶" Foreground="White" Width="16"/>
+                                <TextBlock Text="Play" Foreground="White" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Stop -->
+                        <Border Background="#FFC62828" Padding="8,4" Margin="0,2" Cursor="Hand"
+                                MouseLeftButtonDown="ActionItem_MouseDown" Tag="Stop"
+                                BorderBrush="#FFE53935" BorderThickness="1" CornerRadius="3">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="■" Foreground="White" Width="16"/>
+                                <TextBlock Text="Stop" Foreground="White" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Cue -->
+                        <Border Background="#FF1565C0" Padding="8,4" Margin="0,2" Cursor="Hand"
+                                MouseLeftButtonDown="ActionItem_MouseDown" Tag="Cue"
+                                BorderBrush="#FF1976D2" BorderThickness="1" CornerRadius="3">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="◆" Foreground="White" Width="16"/>
+                                <TextBlock Text="Cue" Foreground="White" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="Drag to timeline" Foreground="#FF666666"
+                                   FontSize="9" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- TAKES LIST -->
+            <Border Grid.Column="1" Background="{StaticResource BgPanel}" Margin="2,2,2,4">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="6,4">
+                        <DockPanel>
+                            <TextBlock Text="TAKES" Style="{StaticResource HeaderStyle}" FontSize="10"/>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Button Content="+" Width="20" Height="18" FontSize="10"
+                                        Click="AddTake_Click" ToolTip="Add Take"/>
+                                <Button Content="-" Width="20" Height="18" FontSize="10" Margin="2,0,0,0"
+                                        Click="RemoveTake_Click" ToolTip="Remove Take"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <!-- Take Name Editor -->
+                    <Border DockPanel.Dock="Bottom" Background="#FF2A2A2A" Padding="4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Name:" Foreground="{StaticResource TextSecondary}"
+                                       FontSize="10" VerticalAlignment="Center"/>
+                            <TextBox x:Name="TxtTakeName" Grid.Column="1"
+                                     FontSize="10" Height="20"
+                                     TextChanged="TakeName_Changed"
+                                     IsEnabled="False"/>
+                        </Grid>
+                    </Border>
+                    <ListBox x:Name="TakesList" Background="Transparent" BorderThickness="0"
+                             SelectionChanged="TakesList_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" Foreground="#CCCCCC" Padding="4,2"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="4,2"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource Accent}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- TAKE TIMELINE -->
+            <Border Grid.Column="2" Background="{StaticResource BgPanel}" Margin="2,2,2,4">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgHeader}" Padding="6,4">
+                        <DockPanel>
+                            <TextBlock Text="TAKE TIMELINE" Style="{StaticResource HeaderStyle}" FontSize="10"/>
+                            <TextBlock x:Name="TxtSelectedTake" DockPanel.Dock="Right"
+                                       Text="(no take selected)"
+                                       Foreground="{StaticResource TextSecondary}" FontSize="10"/>
+                        </DockPanel>
+                    </Border>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="180"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Timeline Canvas -->
+                        <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <Canvas x:Name="TakeTimelineCanvas"
+                                    Background="{StaticResource BgMain}"
+                                    Height="120" Width="800"
+                                    AllowDrop="True"
+                                    DragEnter="TakeTimeline_DragEnter"
+                                    DragOver="TakeTimeline_DragOver"
+                                    Drop="TakeTimeline_Drop"
+                                    MouseLeftButtonDown="TakeTimeline_MouseDown"/>
+                        </ScrollViewer>
+
+                        <!-- Action Properties Panel -->
+                        <Border Grid.Column="1" Background="{StaticResource BgHeader}"
+                                x:Name="ActionAnimationsPanel" Visibility="Collapsed">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Top" Background="#FF2A2A2A" Padding="6,4">
+                                    <DockPanel>
+                                        <TextBlock x:Name="TxtActionType" Text="ACTION"
+                                                   Style="{StaticResource HeaderStyle}" FontSize="10"/>
+                                        <Button DockPanel.Dock="Right" Content="Del" Width="30" Height="18"
+                                                FontSize="9" Click="DeleteAction_Click"
+                                                ToolTip="Delete selected action"/>
+                                    </DockPanel>
+                                </Border>
+                                <TextBlock DockPanel.Dock="Top" Text="Target Animations:"
+                                           Foreground="{StaticResource TextSecondary}"
+                                           FontSize="10" Margin="6,6,6,2"/>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="6,0,6,6">
+                                    <StackPanel x:Name="ActionAnimationsList"/>
+                                </ScrollViewer>
+                            </DockPanel>
+                        </Border>
+                    </Grid>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,9 @@
+
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="Any CPU" />
+  </Configurations>
+  <Project Path="Engine\DaroEngine.vcxproj" Id="b12e5a4d-8c3f-4a7e-9d1b-6f2e8c4a9d3b" />
+  <Project Path="Designer\Designer.csproj" />
+</Solution>

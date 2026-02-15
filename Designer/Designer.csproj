@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>DaroDesigner</RootNamespace>
+    <AssemblyName>DaroDesigner</AssemblyName>
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
+    <Product>DaroDesigner</Product>
+    <Company>Daro</Company>
+    <Description>Real-time broadcast graphics designer</Description>
+  </PropertyGroup>
+
+  <!-- NuGet packages for Mosart integration -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Dapper" Version="2.1.35" />
+    <!-- System.IO.Pipelines is included in .NET 10 runtime -->
+  </ItemGroup>
+
+  <!-- Reference na DaroEngine projekt zajistí správné pořadí sestavení -->
+  <ItemGroup>
+    <ProjectReference Include="..\Engine\DaroEngine.vcxproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="CopyDaroEngine" AfterTargets="Build">
+    <Copy SourceFiles="$(SolutionDir)bin\$(Configuration)\DaroEngine.dll"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Copy FFmpeg DLLs if present -->
+  <Target Name="CopyFFmpegDlls" AfterTargets="Build" Condition="Exists('$(SolutionDir)ThirdParty\ffmpeg\bin')">
+    <ItemGroup>
+      <FFmpegDlls Include="$(SolutionDir)ThirdParty\ffmpeg\bin\*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FFmpegDlls)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true"
+          Condition="'@(FFmpegDlls)' != ''" />
+  </Target>
+</Project>

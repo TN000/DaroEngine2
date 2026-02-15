@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaroEngine - Graphics Middleware</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface2: #1a1a26;
+            --surface3: #22222e;
+            --border: #2a2a3a;
+            --border-hover: #3a3a4e;
+            --text: #e8e8f0;
+            --text2: #8888a0;
+            --text3: #55556a;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-glow: rgba(99,102,241,0.15);
+            --green: #22c55e;
+            --green-bg: rgba(34,197,94,0.1);
+            --red: #ef4444;
+            --red-bg: rgba(239,68,68,0.08);
+            --orange: #f59e0b;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Top bar */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+
+        .topbar-brand svg { opacity: 0.7; }
+
+        .topbar-nav { display: flex; gap: 4px; }
+
+        .topbar-nav a {
+            padding: 6px 14px;
+            border-radius: 6px;
+            color: var(--text2);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .topbar-nav a:hover { color: var(--text); background: var(--surface2); }
+        .topbar-nav a.active { color: var(--accent); background: var(--accent-glow); }
+
+        /* Layout */
+        .main { display: flex; min-height: calc(100vh - 49px); }
+
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            border-right: 1px solid var(--border);
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 16px 16px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text3);
+        }
+
+        .sidebar-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 8px 8px;
+        }
+
+        .tmpl-item {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-bottom: 2px;
+        }
+
+        .tmpl-item:hover { background: var(--surface2); }
+
+        .tmpl-item.selected {
+            background: var(--accent-glow);
+            outline: 1px solid var(--accent);
+        }
+
+        .tmpl-item .tmpl-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tmpl-item .tmpl-meta {
+            font-size: 0.75rem;
+            color: var(--text3);
+            margin-top: 2px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tmpl-item .tmpl-meta .no-scene {
+            color: var(--red);
+            font-weight: 500;
+        }
+
+        /* Content area */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .content-inner {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 32px 40px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title .badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--accent-glow);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Empty state */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            color: var(--text3);
+        }
+
+        .empty-state svg { opacity: 0.3; margin-bottom: 16px; }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* Template canvas form */
+        .canvas-wrapper {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 24px;
+            overflow: auto;
+        }
+
+        .canvas-area {
+            position: relative;
+            margin: 0 auto;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .canvas-element {
+            position: absolute;
+        }
+
+        .canvas-element.label-el {
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .canvas-element input,
+        .canvas-element textarea {
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 8px;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            resize: none;
+        }
+
+        .canvas-element input:focus,
+        .canvas-element textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        .canvas-element input.invalid,
+        .canvas-element textarea.invalid {
+            border-color: var(--red);
+            box-shadow: 0 0 0 2px var(--red-bg);
+        }
+
+        /* Name + actions row */
+        .form-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 24px;
+        }
+
+        .form-field { flex: 1; }
+
+        .form-field label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text2);
+            margin-bottom: 6px;
+        }
+
+        .form-field input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .form-field input:focus {
+            border-color: var(--accent);
+        }
+
+        .form-field input::placeholder { color: var(--text3); }
+
+        /* Takes */
+        .takes-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .take-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: var(--surface3);
+            border: 1px solid var(--border);
+            font-size: 0.78rem;
+            color: var(--text2);
+        }
+
+        .take-tag .take-name { font-weight: 500; color: var(--text); }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text2);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover:not(:disabled) {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: var(--border-hover);
+        }
+
+        .btn-danger-ghost {
+            background: transparent;
+            color: var(--text3);
+            border: none;
+            padding: 6px 8px;
+        }
+
+        .btn-danger-ghost:hover {
+            color: var(--red);
+            background: var(--red-bg);
+        }
+
+        /* Toast / status */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            max-width: 400px;
+        }
+
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--green); color: white; }
+        .toast.error { background: var(--red); color: white; }
+        .toast.info { background: var(--accent); color: white; }
+
+        /* Saved items list */
+        .items-section { margin-top: 40px; }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            transition: background 0.1s;
+        }
+
+        .item-row:hover { background: var(--surface2); }
+
+        .item-row .item-name {
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-row .item-id {
+            font-family: 'Consolas', 'SF Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text3);
+            margin: 0 12px;
+            cursor: pointer;
+            padding: 3px 8px;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+
+        .item-row .item-id:hover {
+            background: var(--surface3);
+            color: var(--text2);
+        }
+
+        .item-row .item-time {
+            font-size: 0.75rem;
+            color: var(--text3);
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="topbar-brand">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            DaroEngine Graphics Middleware
+        </div>
+        <div class="topbar-nav">
+            <a href="/" class="active">Templates</a>
+            <a href="/control.html">Mosart Control</a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="sidebar">
+            <div class="sidebar-header">Templates</div>
+            <div class="sidebar-list" id="templateList">
+                <div style="padding:20px;color:var(--text3);font-size:0.85rem;">Loading...</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="content-inner">
+                <!-- Empty state -->
+                <div id="emptyState" class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                    <p>Select a template from the sidebar</p>
+                </div>
+
+                <!-- Template form -->
+                <div id="templateForm" style="display:none;">
+                    <div class="section-title">
+                        <span id="templateTitle"></span>
+                        <span class="badge" id="templateBadge"></span>
+                    </div>
+
+                    <div class="canvas-wrapper">
+                        <div class="canvas-area" id="canvasArea"></div>
+                    </div>
+
+                    <div id="takesContainer" class="takes-row" style="display:none;"></div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Item name (optional)</label>
+                            <input type="text" id="itemName" placeholder="Auto-generated from template name">
+                        </div>
+                        <button class="btn btn-primary" id="createBtn">Save Item</button>
+                    </div>
+
+                    <!-- Items list -->
+                    <div class="items-section">
+                        <div class="section-title">Saved Items</div>
+                        <div id="itemsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API = window.location.origin;
+        let selectedTemplateId = null;
+        let selectedTemplate = null;
+
+        function esc(t) {
+            if (t == null) return '';
+            const d = document.createElement('div');
+            d.textContent = String(t);
+            return d.innerHTML;
+        }
+
+        function escAttr(t) {
+            if (t == null) return '';
+            return String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function toast(msg, type = 'info') {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = `toast ${type}`;
+            requestAnimationFrame(() => el.classList.add('show'));
+            setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        function formatTime(iso) {
+            if (!iso) return '';
+            try {
+                const d = new Date(iso);
+                return d.toLocaleString('cs-CZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            } catch { return ''; }
+        }
+
+        // ================================================================
+        // Templates
+        // ================================================================
+
+        async function loadTemplates() {
+            const el = document.getElementById('templateList');
+            try {
+                const res = await fetch(`${API}/api/templates`);
+                if (!res.ok) throw new Error('Failed to load');
+                const data = await res.json();
+
+                if (data.templates.length === 0) {
+                    el.innerHTML = '<div style="padding:20px;color:var(--text3);font-size:0.85rem;">No templates found.<br>Check Templates folder.</div>';
+                    return;
+                }
+
+                el.innerHTML = data.templates.map(t => `
+                    <div class="tmpl-item" data-id="${escAttr(t.id)}">
+                        <div class="tmpl-name">${esc(t.name)}</div>
+                        <div class="tmpl-meta">
+                            <span>${t.elementCount} fields</span>
+                            <span>${t.takeCount} takes</span>
+                            ${t.hasLinkedScene ? '' : '<span class="no-scene">no scene</span>'}
+                        </div>
+                    </div>
+                `).join('');
+
+                el.querySelectorAll('.tmpl-item[data-id]').forEach(item => {
+                    item.addEventListener('click', () => selectTemplate(item.dataset.id));
+                });
+            } catch (e) {
+                el.innerHTML = `<div style="padding:20px;color:var(--red);font-size:0.85rem;">Error: ${esc(e.message)}</div>`;
+            }
+        }
+
+        async function selectTemplate(id) {
+            document.querySelectorAll('.tmpl-item').forEach(el => {
+                el.classList.toggle('selected', el.dataset.id === id);
+            });
+
+            selectedTemplateId = id;
+
+            try {
+                const res = await fetch(`${API}/api/templates/${id}`);
+                if (!res.ok) throw new Error('Failed to load template');
+                selectedTemplate = await res.json();
+
+                document.getElementById('emptyState').style.display = 'none';
+                document.getElementById('templateForm').style.display = '';
+                document.getElementById('templateTitle').textContent = selectedTemplate.name;
+                document.getElementById('templateBadge').textContent = selectedTemplate.linkedSceneExists ? 'Scene linked' : 'No scene';
+                document.getElementById('templateBadge').style.color = selectedTemplate.linkedSceneExists ? 'var(--green)' : 'var(--red)';
+                document.getElementById('templateBadge').style.background = selectedTemplate.linkedSceneExists ? 'var(--green-bg)' : 'var(--red-bg)';
+
+                renderCanvasForm(selectedTemplate);
+                renderTakes(selectedTemplate);
+                loadItems();
+            } catch (e) {
+                toast(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        // ================================================================
+        // Canvas form - matches Template Maker layout
+        // ================================================================
+
+        const ELEM_LABEL = 0, ELEM_TEXTBOX = 1, ELEM_MULTILINE = 2;
+
+        function parseCssColor(c) {
+            if (!c) return null;
+            if (c.length === 9 && c.startsWith('#')) {
+                // #AARRGGBB (WPF format) -> rgba
+                const a = parseInt(c.substr(1,2),16) / 255;
+                const r = parseInt(c.substr(3,2),16);
+                const g = parseInt(c.substr(5,2),16);
+                const b = parseInt(c.substr(7,2),16);
+                return `rgba(${r},${g},${b},${a.toFixed(2)})`;
+            }
+            return c;
+        }
+
+        function renderCanvasForm(tmpl) {
+            const canvas = document.getElementById('canvasArea');
+            const cw = tmpl.canvasWidth || 400;
+            const ch = tmpl.canvasHeight || 200;
+            const bg = parseCssColor(tmpl.backgroundColor) || '#1e1e1e';
+
+            canvas.style.width = cw + 'px';
+            canvas.style.height = ch + 'px';
+            canvas.style.background = bg;
+            canvas.innerHTML = '';
+
+            if (!tmpl.elements || tmpl.elements.length === 0) {
+                canvas.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:0.85rem;">No form fields</div>';
+                return;
+            }
+
+            tmpl.elements.forEach(elem => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'canvas-element' + (elem.elementType === ELEM_LABEL ? ' label-el' : '');
+                wrapper.style.left = elem.x + 'px';
+                wrapper.style.top = elem.y + 'px';
+                wrapper.style.width = (elem.width || 150) + 'px';
+                wrapper.style.height = (elem.height || 30) + 'px';
+
+                const fg = parseCssColor(elem.foregroundColor) || '#ffffff';
+                const ebg = parseCssColor(elem.backgroundColor) || 'transparent';
+                const font = elem.fontFamily || 'Segoe UI';
+                const fsize = elem.fontSize || 14;
+
+                if (elem.elementType === ELEM_LABEL) {
+                    const lbl = document.createElement('div');
+                    lbl.style.cssText = `color:${fg};background:${ebg};font-family:${esc(font)};font-size:${fsize}px;line-height:${(elem.height||30)}px;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
+                    lbl.textContent = elem.defaultText || elem.name || '';
+                    wrapper.appendChild(lbl);
+                } else if (elem.elementType === ELEM_MULTILINE) {
+                    const ta = document.createElement('textarea');
+                    ta.dataset.tfId = elem.linkedTransfunctionerId || elem.id;
+                    ta.dataset.elemId = elem.id;
+                    ta.placeholder = elem.placeholder || '';
+                    ta.value = elem.defaultText || '';
+                    if (elem.maxLength > 0) ta.maxLength = elem.maxLength;
+                    if (elem.isRequired) ta.required = true;
+                    ta.style.cssText = `color:${fg};background:${ebg};font-family:${esc(font)};font-size:${fsize}px;`;
+                    wrapper.appendChild(ta);
+                } else {
+                    const inp = document.createElement('input');
+                    inp.type = 'text';
+                    inp.dataset.tfId = elem.linkedTransfunctionerId || elem.id;
+                    inp.dataset.elemId = elem.id;
+                    inp.placeholder = elem.placeholder || '';
+                    inp.value = elem.defaultText || '';
+                    if (elem.maxLength > 0) inp.maxLength = elem.maxLength;
+                    if (elem.isRequired) inp.required = true;
+                    inp.style.cssText = `color:${fg};background:${ebg};font-family:${esc(font)};font-size:${fsize}px;`;
+                    wrapper.appendChild(inp);
+                }
+
+                canvas.appendChild(wrapper);
+            });
+        }
+
+        function renderTakes(tmpl) {
+            const c = document.getElementById('takesContainer');
+            if (!tmpl.takes || tmpl.takes.length === 0) {
+                c.style.display = 'none';
+                return;
+            }
+            c.style.display = 'flex';
+            c.innerHTML = tmpl.takes.map((t, i) =>
+                `<div class="take-tag"><span class="take-name">${esc(t.name)}</span><span>${t.durationFrames}f</span></div>`
+            ).join('');
+        }
+
+        function getFilledData() {
+            const data = {};
+            document.querySelectorAll('[data-tf-id]').forEach(el => {
+                const tfId = el.dataset.tfId;
+                const val = el.value.trim();
+                if (val && tfId) data[tfId] = val;
+            });
+            return data;
+        }
+
+        // ================================================================
+        // Create item
+        // ================================================================
+
+        async function createItem() {
+            if (!selectedTemplateId) { toast('Select a template first', 'error'); return; }
+
+            const btn = document.getElementById('createBtn');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API}/api/items`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        templateId: selectedTemplateId,
+                        filledData: getFilledData(),
+                        name: document.getElementById('itemName').value.trim() || null
+                    })
+                });
+
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
+
+                const result = await res.json();
+                toast(`Item saved: ${result.id}`, 'success');
+                navigator.clipboard.writeText(result.id).catch(() => {});
+                loadItems();
+            } catch (e) {
+                toast(`Error: ${e.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // ================================================================
+        // Items list with delete
+        // ================================================================
+
+        async function loadItems() {
+            const el = document.getElementById('itemsList');
+            try {
+                const res = await fetch(`${API}/api/items?limit=20`);
+                if (!res.ok) throw new Error('Failed');
+                const items = await res.json();
+
+                if (items.length === 0) {
+                    el.innerHTML = '<div style="padding:16px 0;color:var(--text3);font-size:0.85rem;">No items yet.</div>';
+                    return;
+                }
+
+                el.innerHTML = items.map((item, i) => `
+                    ${i > 0 ? '<div class="divider"></div>' : ''}
+                    <div class="item-row" data-item-id="${escAttr(item.id)}">
+                        <span class="item-name">${esc(item.name || item.templateId)}</span>
+                        <span class="item-id" title="Click to copy" data-copy="${escAttr(item.id)}">${esc(item.id)}</span>
+                        <span class="item-time">${formatTime(item.createdAt)}</span>
+                        <button class="btn btn-danger-ghost" title="Delete item" data-delete="${escAttr(item.id)}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                        </button>
+                    </div>
+                `).join('');
+
+                // Copy ID on click
+                el.querySelectorAll('[data-copy]').forEach(span => {
+                    span.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(span.dataset.copy).then(() => toast('ID copied', 'success'));
+                    });
+                });
+
+                // Delete item
+                el.querySelectorAll('[data-delete]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteItem(btn.dataset.delete);
+                    });
+                });
+            } catch (e) {
+                el.innerHTML = `<div style="padding:16px 0;color:var(--red);font-size:0.85rem;">Error: ${esc(e.message)}</div>`;
+            }
+        }
+
+        async function deleteItem(id) {
+            if (!confirm('Delete this item?')) return;
+
+            try {
+                const res = await fetch(`${API}/api/items/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Failed to delete');
+                toast('Item deleted', 'success');
+                loadItems();
+            } catch (e) {
+                toast(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        // ================================================================
+        // Init
+        // ================================================================
+
+        document.getElementById('createBtn').addEventListener('click', createItem);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTemplates();
+            loadItems();
+        });
+    </script>
+</body>
+</html>

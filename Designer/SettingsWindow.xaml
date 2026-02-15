@@ -1,0 +1,67 @@
+<!-- Designer/SettingsWindow.xaml -->
+<Window x:Class="DaroDesigner.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings"
+        Width="420" Height="250"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="#FF1E1E1E">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/DarkTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Section Header: RE -->
+        <Border Grid.Row="0" BorderBrush="#FF3F3F46" BorderThickness="0,0,0,1" Padding="0,0,0,6">
+            <TextBlock Text="Rendering Engine (RE)"
+                       Foreground="#FF007ACC" FontSize="14" FontWeight="SemiBold"/>
+        </Border>
+
+        <!-- Edge Antialiasing -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="Edge Antialiasing"
+                       Foreground="#FFB0B0B0" FontSize="12" VerticalAlignment="Center"/>
+
+            <ComboBox x:Name="CmbEdgeSmoothing" Grid.Column="1"
+                      Background="#FF3C3C3C" Foreground="White"
+                      BorderBrush="#FF3F3F46" BorderThickness="1"
+                      Height="28" VerticalContentAlignment="Center"
+                      Padding="6,0">
+                <ComboBoxItem Content="Off" Tag="0"/>
+                <ComboBoxItem Content="Low" Tag="1"/>
+                <ComboBoxItem Content="Medium" Tag="2"/>
+                <ComboBoxItem Content="High" Tag="3"/>
+            </ComboBox>
+        </Grid>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" Width="80" Height="28" Margin="0,0,8,0"
+                    Background="#FF007ACC" Foreground="White" BorderThickness="0"
+                    Click="BtnOk_Click" IsDefault="True" Cursor="Hand"/>
+            <Button Content="Cancel" Width="80" Height="28"
+                    Background="#FF3C3C3C" Foreground="White"
+                    BorderBrush="#FF3F3F46" BorderThickness="1"
+                    Click="BtnCancel_Click" IsCancel="True" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>
