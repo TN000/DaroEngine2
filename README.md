@@ -73,34 +73,51 @@ msbuild DaroEngine2.slnx /p:Configuration=Debug /p:Platform=x64
 
 ## How It Works
 
+DaroEngine2 separates **design** from **playout** — a designer creates animated scenes and templates once, and an operator can then use them live with just a few clicks. No technical knowledge needed during the broadcast.
+
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    DaroDesigner (WPF)                    │
-│                                                         │
-│  ┌──────────┐   ┌──────────┐   ┌────────────────────┐  │
-│  │  Design   │──>│ Template │──>│      Playout       │  │
-│  │  Scene    │   │  Fill    │   │  Cue > Take > Air  │  │
-│  └──────────┘   └──────────┘   └─────────┬──────────┘  │
-│                                           │              │
-└───────────────────────────────────────────┼──────────────┘
-                                            │ P/Invoke
-                                ┌───────────▼──────────┐
-                                │  DaroEngine.dll      │
-                                │  (C++ / DirectX 11)  │
-                                └───────────┬──────────┘
-                                            │ Spout
-                                ┌───────────▼──────────┐
-                                │  OBS / vMix / etc.   │
-                                └──────────────────────┘
+  PREPARATION (before show)              LIVE (during broadcast)
+
+  ┌──────────┐   ┌──────────────┐       ┌──────────────────────┐
+  │  Design   │──>│  Create      │       │      PLAYOUT         │
+  │  Scenes   │   │  Templates   │       │                      │
+  │  (.daro)  │   │  (.dtemplate)│       │  ┌────────────────┐  │
+  └──────────┘   └──────────────┘       │  │ Playlist:      │  │
+                                         │  │  1. Lower Third│  │
+                                         │  │  2. Full Screen│  │
+                                         │  │  3. Score      │  │
+                                         │  │  4. Outro      │  │
+                                         │  └────────┬───────┘  │
+                                         │           │          │
+                                         │    [Cue Next]       │
+                                         │    [>> TAKE <<]     │
+                                         │    [Clear]          │
+                                         └──────────┬───────────┘
+                                                    │ Spout
+                                         ┌──────────▼───────────┐
+                                         │   OBS / vMix / etc.  │
+                                         └──────────────────────┘
 ```
 
-### Workflow
+### Preparation Workflow (before the show)
 
-1. **Create a Scene** — Add layers (text, images, shapes, video) and animate them on the timeline
-2. **Build a Template** — Design a fill form that maps input fields to scene properties
-3. **Fill & Add to Playlist** — Load a template, fill in the fields, add to the playout playlist
-4. **Take On Air** — Cue the next item and take it live
-5. **Spout to OBS** — The rendered output streams to OBS via Spout in real time
+1. **Design a Scene** — Open the visual editor, add layers (text, images, shapes, video), animate them on the timeline with keyframes
+2. **Create a Template** — Build a fill form in the Template Maker that maps input fields to scene properties (e.g., a "Name" field that controls the text layer)
+3. **Save** — Scene as `.daro`, template as `.dtemplate`. These are your reusable building blocks
+
+### Live Playout Workflow (during the broadcast)
+
+Once your templates are ready, going live is simple — the operator just works with a playlist:
+
+1. **Browse Templates** — In the PLAYOUT tab, pick a template from the library
+2. **Fill In** — Type the text (headline, name, score...) into the form fields
+3. **Add to Playlist** — Click **+ Add to Playlist**. Repeat for all graphics you'll need during the show
+4. **Cue Next** — Double-click an item to load it into the engine, ready to go
+5. **Take** — One click to play the animation on air. The graphic renders and streams via Spout to OBS in real time
+6. **Clear** — Remove the graphic from output when done
+7. **Repeat** — Cue the next item and take again. With auto-advance enabled, the next item cues automatically
+
+The entire live workflow is **Cue → Take → Clear**, making it fast enough for live news, sports, or event production. The playlist can be prepared in advance or built on the fly during the show.
 
 ---
 
