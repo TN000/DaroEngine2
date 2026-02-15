@@ -48,7 +48,7 @@ Think of it as an open-source alternative to commercial broadcast graphics syste
 
 ```bash
 # Clone the repository
-git clone https://github.com/user/DaroEngine2.git
+git clone https://github.com/TN000/DaroEngine2.git
 cd DaroEngine2
 
 # Build the full solution
