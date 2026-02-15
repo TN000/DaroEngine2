@@ -1,9 +1,9 @@
 #define MyAppName "DaroEngine2"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.1.1"
 #define MyAppPublisher "DaroEngine2 Contributors"
 #define MyAppURL "https://github.com/TN000/DaroEngine2"
 #define MyAppExeName "DaroDesigner.exe"
-#define BuildDir "..\release-tmp\DaroEngine2-v0.1.0"
+#define BuildDir "..\release-tmp\DaroEngine2-v0.1.1"
 
 [Setup]
 AppId={{E8F3A2B1-5C7D-4E9F-B6A8-3D2C1F0E9B7A}

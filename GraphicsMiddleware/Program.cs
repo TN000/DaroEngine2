@@ -12,12 +12,22 @@ using Serilog.Events;
 // GRAPHICS MIDDLEWARE - Octopus NRCS <-> Mosart <-> DaroEngine Integration
 // ============================================================================
 
+// Writable data directory (avoids Program Files write restrictions)
+var dataDir = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+    "DaroEngine2", "Middleware");
+Directory.CreateDirectory(dataDir);
+
 // Pre-build minimal config to read log path before full app startup
 var bootstrapConfig = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: true)
     .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
     .Build();
 var logPath = bootstrapConfig.GetValue("Logging:LogPath", "logs/middleware-.log");
+
+// Resolve relative log path against writable data directory
+if (!Path.IsPathRooted(logPath))
+    logPath = Path.Combine(dataDir, logPath);
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()

@@ -1290,9 +1290,14 @@ namespace DaroDesigner
 
             if (!healthOk)
             {
-                Logger.Warn("Middleware health check timed out, killing process");
+                var process = _middlewareProcess;
+                var exited = process != null && process.HasExited;
+                var exitCode = exited ? process.ExitCode : -1;
+                Logger.Warn($"Middleware health check failed. Process exited: {exited}, exit code: {exitCode}");
                 await StopMiddlewareAsync();
-                TxtStatus.Text = "Middleware failed to start (health check timeout)";
+                TxtStatus.Text = exited
+                    ? $"Middleware crashed on startup (exit code {exitCode})"
+                    : "Middleware failed to start (health check timeout)";
                 return;
             }
 

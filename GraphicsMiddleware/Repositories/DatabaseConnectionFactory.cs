@@ -32,6 +32,16 @@ public sealed class DatabaseConnectionFactory : IDatabaseConnectionFactory, IAsy
     {
         var dbPath = configuration.GetValue<string>("Database:Path") ?? "graphics_middleware.db";
 
+        // Resolve relative paths against writable data directory (avoids Program Files write restrictions)
+        if (!Path.IsPathRooted(dbPath))
+        {
+            var dataDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "DaroEngine2", "Middleware");
+            Directory.CreateDirectory(dataDir);
+            dbPath = Path.Combine(dataDir, dbPath);
+        }
+
         // Connection string with pooling and WAL mode preparation
         _connectionString = new SqliteConnectionStringBuilder
         {
