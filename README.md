@@ -16,6 +16,14 @@ Think of it as an open-source alternative to commercial broadcast graphics syste
 
 > **Built in 7 days** using vibecoding with [Claude Code](https://claude.ai/code) — from zero to a working broadcast graphics engine.
 
+> **Early Release / Work in Progress**
+> This version is **fully functional and usable in production** — you can design scenes, build templates, run playlists, and output via Spout right now. However, this is an **unfinished project**. Some features are missing entirely, and some existing features don't work perfectly yet. Known rough edges include:
+> - Texture offset/panning not working correctly
+> - Animation easing curves not properly tuned
+> - UI polish and edge cases in various areas
+>
+> Contributions, bug reports, and feedback are very welcome — this is exactly why we're open-sourcing it.
+
 <!-- screenshots here -->
 
 ---
