@@ -1210,17 +1210,25 @@ namespace DaroDesigner
         {
             SetMiddlewareState(MiddlewareState.Starting);
 
+            // Search for middleware exe: first in Middleware/ subdir, then next to app, then in repo structure
             var appDir = AppDomain.CurrentDomain.BaseDirectory;
-            var middlewarePath = Path.Combine(appDir, AppConstants.MiddlewareSubDir, AppConstants.MiddlewareExeName);
+            var searchPaths = new[]
+            {
+                Path.Combine(appDir, AppConstants.MiddlewareSubDir, AppConstants.MiddlewareExeName),
+                Path.Combine(appDir, "..", "..", "..", "..", "GraphicsMiddleware", "bin", "Release", "net9.0", "win-x64", AppConstants.MiddlewareExeName),
+                Path.Combine(appDir, "..", "..", "..", "..", "GraphicsMiddleware", "bin", "Debug", "net9.0", AppConstants.MiddlewareExeName),
+            };
+            var middlewarePath = searchPaths.FirstOrDefault(File.Exists);
 
-            if (!File.Exists(middlewarePath))
+            if (middlewarePath == null)
             {
                 MessageBox.Show(
-                    $"GraphicsMiddleware.exe not found at:\n{middlewarePath}",
+                    $"GraphicsMiddleware.exe not found.\nSearched:\n{string.Join("\n", searchPaths.Select(Path.GetFullPath))}",
                     "Middleware Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
                 SetMiddlewareState(MiddlewareState.Stopped);
                 return;
             }
+            middlewarePath = Path.GetFullPath(middlewarePath);
 
             // Check if port is already in use
             try
@@ -1238,18 +1246,24 @@ namespace DaroDesigner
             catch (HttpRequestException) { }
             catch (TaskCanceledException) { }
 
+            Logger.Info($"Starting middleware from: {middlewarePath}");
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = middlewarePath,
                 WorkingDirectory = Path.GetDirectoryName(middlewarePath),
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
             startInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Production";
 
             try
             {
                 _middlewareProcess = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+                _middlewareProcess.OutputDataReceived += (s, args) => { if (args.Data != null) Logger.Info($"[Middleware] {args.Data}"); };
+                _middlewareProcess.ErrorDataReceived += (s, args) => { if (args.Data != null) Logger.Warn($"[Middleware] {args.Data}"); };
                 _middlewareProcess.Exited += OnMiddlewareProcessExited;
 
                 if (!_middlewareProcess.Start())
@@ -1259,6 +1273,8 @@ namespace DaroDesigner
                     return;
                 }
 
+                _middlewareProcess.BeginOutputReadLine();
+                _middlewareProcess.BeginErrorReadLine();
                 Logger.Info($"Middleware process started, PID: {_middlewareProcess.Id}");
             }
             catch (Exception ex)
