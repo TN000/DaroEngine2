@@ -261,6 +261,7 @@ Community contributions welcome in any of these areas:
 
 - [ ] [EBU OGraf](https://tech.ebu.ch/news/2025/04/ograf-the-ebu's-open-spec-for-cross-platform-graphics-integration) support — render HTML-based `.ograf.json` graphics packages and/or export DaroEngine templates as OGraf web components
 - [ ] Multi-resolution support (4K, custom resolutions)
+- [ ] Configurable frame rates (25p, 30p, 50p, 60p)
 - [ ] NDI output (alternative to Spout)
 - [ ] GPU-accelerated text effects (drop shadows, outlines, gradients)
 - [ ] Plugin system for custom layer types
