@@ -1,5 +1,0 @@
-$fs = New-Object IO.FileStream('D:\realtime\DaroEngine2\Designer\bin\Debug\net10.0-windows\DaroVideo.log', [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
-$sr = New-Object IO.StreamReader($fs)
-$sr.ReadToEnd()
-$sr.Close()
-$fs.Close()
